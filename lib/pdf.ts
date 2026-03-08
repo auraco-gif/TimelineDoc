@@ -3,19 +3,48 @@
 // Captures each document page DOM node with html2canvas, adds to jsPDF.
 // Letter size: 8.5 × 11 inches
 //
-// Root cause of "Unable to find element in cloned iframe":
+// Two bugs fixed:
+//
+// Bug 1 — "Unable to find element in cloned iframe":
 //   html2canvas clones the document into a hidden iframe to measure layout.
 //   Elements inside a scrolled container (overflow: auto/scroll) cannot be
-//   located by html2canvas in that cloned context.
+//   located in that cloned context. Fix: clone each page onto document.body.
 //
-// Fix: for each page, clone the element onto document.body at a fixed
-//   off-screen position before capturing, then remove the clone.
+// Bug 2 — Blank PDF pages:
+//   Using z-index: -9999 caused the body's white background to paint over the
+//   cloned element during html2canvas compositing → all-white output.
+//   Fix: use a high positive z-index (99999) so the clone renders on top.
+//   Also: wait for all <img> elements in the clone to finish loading before
+//   capturing, since cloneNode() creates fresh HTMLImageElement instances that
+//   need a tick to decode the blob URL even if already cached.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface ExportOptions {
   filename?: string;
   scale?: number;
   onProgress?: (current: number, total: number) => void;
+}
+
+function waitForImages(container: HTMLElement): Promise<void> {
+  const imgs = Array.from(container.querySelectorAll("img")) as HTMLImageElement[];
+  if (imgs.length === 0) return Promise.resolve();
+
+  return Promise.all(
+    imgs.map(
+      (img) =>
+        new Promise<void>((resolve) => {
+          if (img.complete && img.naturalWidth > 0) {
+            resolve();
+            return;
+          }
+          const done = () => resolve();
+          img.addEventListener("load", done, { once: true });
+          img.addEventListener("error", done, { once: true });
+          // Safety timeout — don't block export forever
+          setTimeout(done, 5000);
+        })
+    )
+  ).then(() => undefined);
 }
 
 async function capturePageElement(
@@ -34,13 +63,17 @@ async function capturePageElement(
     left: "0",
     width: `${w}px`,
     height: `${h}px`,
-    // Push behind everything visually; html2canvas still renders it
-    zIndex: "-9999",
+    // Must be a HIGH positive z-index.
+    // Negative z-index causes the body white background to composite ON TOP
+    // of the element inside html2canvas, producing blank white output.
+    zIndex: "99999",
     pointerEvents: "none",
     margin: "0",
-    padding: clone.style.padding || "",
   });
   document.body.appendChild(clone);
+
+  // Wait for cloned <img> elements to finish loading before capturing
+  await waitForImages(clone);
 
   try {
     const canvas = await html2canvas(clone, {
@@ -50,8 +83,9 @@ async function capturePageElement(
       backgroundColor: "#ffffff",
       width: w,
       height: h,
-      windowWidth: w,
-      windowHeight: h,
+      // Use full window dimensions so html2canvas layout matches the real page
+      windowWidth: document.documentElement.clientWidth,
+      windowHeight: document.documentElement.clientHeight,
       x: 0,
       y: 0,
       scrollX: 0,
@@ -89,7 +123,11 @@ export async function exportToPDF(
     if (i > 0) pdf.addPage("letter", "portrait");
     onProgress?.(i + 1, pageElements.length);
 
-    const imgData = await capturePageElement(pageElements[i], html2canvas as Parameters<typeof capturePageElement>[1], scale);
+    const imgData = await capturePageElement(
+      pageElements[i],
+      html2canvas as Parameters<typeof capturePageElement>[1],
+      scale
+    );
     pdf.addImage(imgData, "JPEG", 0, 0, 8.5, 11);
   }
 
