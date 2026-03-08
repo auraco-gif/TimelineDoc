@@ -1,22 +1,16 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// PDF export
-// Captures each document page DOM node with html2canvas, adds to jsPDF.
-// Letter size: 8.5 × 11 inches
+// PDF export — captures ORIGINAL page DOM nodes (no cloning)
 //
-// Two bugs fixed:
+// html2canvas clones the document into a hidden iframe. Elements inside
+// a scrolled container (overflow: auto) can fail to resolve in that clone.
 //
-// Bug 1 — "Unable to find element in cloned iframe":
-//   html2canvas clones the document into a hidden iframe to measure layout.
-//   Elements inside a scrolled container (overflow: auto/scroll) cannot be
-//   located in that cloned context. Fix: clone each page onto document.body.
-//
-// Bug 2 — Blank PDF pages:
-//   Using z-index: -9999 caused the body's white background to paint over the
-//   cloned element during html2canvas compositing → all-white output.
-//   Fix: use a high positive z-index (99999) so the clone renders on top.
-//   Also: wait for all <img> elements in the clone to finish loading before
-//   capturing, since cloneNode() creates fresh HTMLImageElement instances that
-//   need a tick to decode the blob URL even if already cached.
+// Strategy:
+//   1. Add a full-screen overlay to hide visual changes from the user
+//   2. Temporarily set ALL ancestor overflow containers to "visible"
+//      so html2canvas's iframe clone can lay out and find each element
+//   3. Capture the original element — images are already decoded, no
+//      blob-URL re-loading issues
+//   4. Restore original overflow styles and remove overlay
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface ExportOptions {
@@ -25,77 +19,40 @@ export interface ExportOptions {
   onProgress?: (current: number, total: number) => void;
 }
 
-function waitForImages(container: HTMLElement): Promise<void> {
-  const imgs = Array.from(container.querySelectorAll("img")) as HTMLImageElement[];
-  if (imgs.length === 0) return Promise.resolve();
-
-  return Promise.all(
-    imgs.map(
-      (img) =>
-        new Promise<void>((resolve) => {
-          if (img.complete && img.naturalWidth > 0) {
-            resolve();
-            return;
-          }
-          const done = () => resolve();
-          img.addEventListener("load", done, { once: true });
-          img.addEventListener("error", done, { once: true });
-          // Safety timeout — don't block export forever
-          setTimeout(done, 5000);
-        })
-    )
-  ).then(() => undefined);
+function getScrollAncestors(el: HTMLElement): HTMLElement[] {
+  const ancestors: HTMLElement[] = [];
+  let current = el.parentElement;
+  while (current && current !== document.body) {
+    const style = getComputedStyle(current);
+    if (
+      style.overflow !== "visible" ||
+      style.overflowX !== "visible" ||
+      style.overflowY !== "visible"
+    ) {
+      ancestors.push(current);
+    }
+    current = current.parentElement;
+  }
+  return ancestors;
 }
 
-async function capturePageElement(
-  el: HTMLElement,
-  html2canvas: (el: HTMLElement, opts: object) => Promise<HTMLCanvasElement>,
-  scale: number
-): Promise<string> {
-  const w = el.offsetWidth;
-  const h = el.offsetHeight;
-
-  // Clone onto body so html2canvas can find it outside the scroll container
-  const clone = el.cloneNode(true) as HTMLElement;
-  Object.assign(clone.style, {
+function createExportOverlay(): HTMLDivElement {
+  const overlay = document.createElement("div");
+  Object.assign(overlay.style, {
     position: "fixed",
-    top: "0",
-    left: "0",
-    width: `${w}px`,
-    height: `${h}px`,
-    // Must be a HIGH positive z-index.
-    // Negative z-index causes the body white background to composite ON TOP
-    // of the element inside html2canvas, producing blank white output.
+    inset: "0",
     zIndex: "99999",
-    pointerEvents: "none",
-    margin: "0",
+    background: "#f0f0ef",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontFamily: "Inter, system-ui, sans-serif",
+    fontSize: "14px",
+    color: "#737373",
   });
-  document.body.appendChild(clone);
-
-  // Wait for cloned <img> elements to finish loading before capturing
-  await waitForImages(clone);
-
-  try {
-    const canvas = await html2canvas(clone, {
-      scale,
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: "#ffffff",
-      width: w,
-      height: h,
-      // Use full window dimensions so html2canvas layout matches the real page
-      windowWidth: document.documentElement.clientWidth,
-      windowHeight: document.documentElement.clientHeight,
-      x: 0,
-      y: 0,
-      scrollX: 0,
-      scrollY: 0,
-      logging: false,
-    });
-    return canvas.toDataURL("image/jpeg", 0.92);
-  } finally {
-    document.body.removeChild(clone);
-  }
+  overlay.textContent = "Generating PDF…";
+  document.body.appendChild(overlay);
+  return overlay;
 }
 
 export async function exportToPDF(
@@ -108,7 +65,6 @@ export async function exportToPDF(
     throw new Error("No pages to export.");
   }
 
-  // Dynamic imports — keep bundle lean and avoid SSR issues
   const [html2canvasModule, jsPDFModule] = await Promise.all([
     import("html2canvas"),
     import("jspdf"),
@@ -116,20 +72,65 @@ export async function exportToPDF(
   const html2canvas = html2canvasModule.default;
   const { jsPDF } = jsPDFModule;
 
-  // Letter: 8.5 × 11 inches
-  const pdf = new jsPDF({ orientation: "portrait", unit: "in", format: "letter" });
+  // Full-screen overlay hides the layout changes during capture
+  const overlay = createExportOverlay();
 
-  for (let i = 0; i < pageElements.length; i++) {
-    if (i > 0) pdf.addPage("letter", "portrait");
-    onProgress?.(i + 1, pageElements.length);
+  // Small pause so the overlay paints before we start heavy work
+  await new Promise((r) => setTimeout(r, 50));
 
-    const imgData = await capturePageElement(
-      pageElements[i],
-      html2canvas as Parameters<typeof capturePageElement>[1],
-      scale
-    );
-    pdf.addImage(imgData, "JPEG", 0, 0, 8.5, 11);
+  // Collect all scroll ancestors that need overflow: visible
+  const scrollAncestors = new Set<HTMLElement>();
+  for (const el of pageElements) {
+    for (const ancestor of getScrollAncestors(el)) {
+      scrollAncestors.add(ancestor);
+    }
   }
 
-  pdf.save(filename);
+  // Save original styles and override to visible
+  const saved = new Map<HTMLElement, { overflow: string; overflowX: string; overflowY: string }>();
+  for (const ancestor of scrollAncestors) {
+    saved.set(ancestor, {
+      overflow: ancestor.style.overflow,
+      overflowX: ancestor.style.overflowX,
+      overflowY: ancestor.style.overflowY,
+    });
+    ancestor.style.overflow = "visible";
+    ancestor.style.overflowX = "visible";
+    ancestor.style.overflowY = "visible";
+  }
+
+  const pdf = new jsPDF({ orientation: "portrait", unit: "in", format: "letter" });
+
+  try {
+    for (let i = 0; i < pageElements.length; i++) {
+      if (i > 0) pdf.addPage("letter", "portrait");
+      onProgress?.(i + 1, pageElements.length);
+
+      const el = pageElements[i];
+      const canvas = await html2canvas(el, {
+        scale,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#ffffff",
+        width: el.offsetWidth,
+        height: el.offsetHeight,
+        logging: false,
+      });
+
+      const imgData = canvas.toDataURL("image/jpeg", 0.92);
+      pdf.addImage(imgData, "JPEG", 0, 0, 8.5, 11);
+    }
+
+    pdf.save(filename);
+  } finally {
+    // Restore original overflow styles
+    for (const [ancestor, styles] of saved) {
+      ancestor.style.overflow = styles.overflow;
+      ancestor.style.overflowX = styles.overflowX;
+      ancestor.style.overflowY = styles.overflowY;
+    }
+
+    // Remove overlay
+    overlay.remove();
+  }
 }

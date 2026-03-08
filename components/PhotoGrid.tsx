@@ -20,7 +20,6 @@ export function PhotoGrid({ photos }: PhotoGridProps) {
           src={photos[0].url}
           alt=""
           className="w-full h-full object-cover"
-          loading="lazy"
         />
       </div>
     );
@@ -39,7 +38,6 @@ export function PhotoGrid({ photos }: PhotoGridProps) {
               src={photo.url}
               alt=""
               className="w-full h-full object-cover"
-              loading="lazy"
             />
           ) : null}
         </div>
