@@ -1,16 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// PDF export — captures ORIGINAL page DOM nodes (no cloning)
-//
-// html2canvas clones the document into a hidden iframe. Elements inside
-// a scrolled container (overflow: auto) can fail to resolve in that clone.
-//
-// Strategy:
-//   1. Add a full-screen overlay to hide visual changes from the user
-//   2. Temporarily set ALL ancestor overflow containers to "visible"
-//      so html2canvas's iframe clone can lay out and find each element
-//   3. Capture the original element — images are already decoded, no
-//      blob-URL re-loading issues
-//   4. Restore original overflow styles and remove overlay
+// PDF export
+// Stable DOM -> PDF export for letter-size timeline pages
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface ExportOptions {
@@ -19,22 +9,20 @@ export interface ExportOptions {
   onProgress?: (current: number, total: number) => void;
 }
 
-function getScrollAncestors(el: HTMLElement): HTMLElement[] {
-  const ancestors: HTMLElement[] = [];
-  let current = el.parentElement;
-  while (current && current !== document.body) {
-    const style = getComputedStyle(current);
-    if (
-      style.overflow !== "visible" ||
-      style.overflowX !== "visible" ||
-      style.overflowY !== "visible"
-    ) {
-      ancestors.push(current);
-    }
-    current = current.parentElement;
-  }
-  return ancestors;
+interface PageSnapshot {
+  el: HTMLElement;
+  parent: Node;
+  nextSibling: Node | null;
+  savedStyle: Record<string, string>;
 }
+
+const LETTER_WIDTH_IN = 8.5;
+const LETTER_HEIGHT_IN = 11;
+
+// 96 CSS px per inch is the standard browser CSS reference pixel.
+const CSS_PX_PER_IN = 96;
+const LETTER_WIDTH_PX = Math.round(LETTER_WIDTH_IN * CSS_PX_PER_IN);   // 816
+const LETTER_HEIGHT_PX = Math.round(LETTER_HEIGHT_IN * CSS_PX_PER_IN); // 1056
 
 function createExportOverlay(): HTMLDivElement {
   const overlay = document.createElement("div");
@@ -55,82 +43,262 @@ function createExportOverlay(): HTMLDivElement {
   return overlay;
 }
 
+function snapshotPages(pageElements: HTMLElement[]): PageSnapshot[] {
+  const out: PageSnapshot[] = [];
+
+  for (const el of pageElements) {
+    const parent = el.parentNode;
+    if (!parent) continue;
+
+    out.push({
+      el,
+      parent,
+      nextSibling: el.nextSibling,
+      savedStyle: {
+        position: el.style.position,
+        top: el.style.top,
+        left: el.style.left,
+        zIndex: el.style.zIndex,
+        width: el.style.width,
+        height: el.style.height,
+        minWidth: el.style.minWidth,
+        minHeight: el.style.minHeight,
+        maxWidth: el.style.maxWidth,
+        maxHeight: el.style.maxHeight,
+        margin: el.style.margin,
+        transform: el.style.transform,
+        display: el.style.display,
+        visibility: el.style.visibility,
+        overflow: el.style.overflow,
+        boxSizing: el.style.boxSizing,
+      },
+    });
+  }
+
+  return out;
+}
+
+function waitForNextFrame(): Promise<void> {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => resolve());
+  });
+}
+
+async function waitForPaint(frames: number = 2): Promise<void> {
+  for (let i = 0; i < frames; i++) {
+    await waitForNextFrame();
+  }
+}
+
+async function waitForImages(container: HTMLElement): Promise<void> {
+  const images = Array.from(container.querySelectorAll("img"));
+
+  await Promise.all(
+    images.map((img) => {
+      if (img.complete && img.naturalWidth > 0) {
+        return Promise.resolve();
+      }
+
+      return new Promise<void>((resolve) => {
+        const done = () => {
+          img.removeEventListener("load", done);
+          img.removeEventListener("error", done);
+          resolve();
+        };
+
+        img.addEventListener("load", done, { once: true });
+        img.addEventListener("error", done, { once: true });
+      });
+    })
+  );
+}
+
+async function waitForFonts(): Promise<void> {
+  const anyDoc = document as Document & {
+    fonts?: {
+      ready: Promise<unknown>;
+    };
+  };
+
+  if (anyDoc.fonts?.ready) {
+    await anyDoc.fonts.ready;
+  }
+}
+
+function getRenderableSize(el: HTMLElement): { width: number; height: number } {
+  const rect = el.getBoundingClientRect();
+
+  const candidatesW = [
+    Math.round(rect.width),
+    el.offsetWidth,
+    el.clientWidth,
+    el.scrollWidth,
+  ].filter((n) => Number.isFinite(n) && n > 0);
+
+  const candidatesH = [
+    Math.round(rect.height),
+    el.offsetHeight,
+    el.clientHeight,
+    el.scrollHeight,
+  ].filter((n) => Number.isFinite(n) && n > 0);
+
+  return {
+    width: candidatesW[0] ?? 0,
+    height: candidatesH[0] ?? 0,
+  };
+}
+
+async function capturePageElement(
+  snapshot: PageSnapshot,
+  html2canvas: (el: HTMLElement, opts: object) => Promise<HTMLCanvasElement>,
+  scale: number
+): Promise<HTMLCanvasElement> {
+  const { el, parent, nextSibling, savedStyle } = snapshot;
+
+  // Move first, then force a stable printable layout.
+  document.body.appendChild(el);
+
+  Object.assign(el.style, {
+    position: "fixed",
+    top: "0",
+    left: "0",
+    zIndex: "99998",
+    width: `${LETTER_WIDTH_PX}px`,
+    height: `${LETTER_HEIGHT_PX}px`,
+    minWidth: `${LETTER_WIDTH_PX}px`,
+    minHeight: `${LETTER_HEIGHT_PX}px`,
+    maxWidth: `${LETTER_WIDTH_PX}px`,
+    maxHeight: `${LETTER_HEIGHT_PX}px`,
+    margin: "0",
+    transform: "none",
+    display: "block",
+    visibility: "visible",
+    overflow: "hidden",
+    boxSizing: "border-box",
+    background: "#ffffff",
+  });
+
+  try {
+    // Let browser finish layout after the node is moved and resized.
+    await waitForPaint(2);
+    await waitForImages(el);
+    await waitForFonts();
+    await waitForPaint(1);
+
+    let { width, height } = getRenderableSize(el);
+
+    // Final fallback: for letter export, use explicit page size.
+    if (width <= 0) width = LETTER_WIDTH_PX;
+    if (height <= 0) height = LETTER_HEIGHT_PX;
+
+    if (width <= 0 || height <= 0) {
+      throw new Error(`Page has invalid size after layout: ${width} x ${height}`);
+    }
+
+    const canvas = await html2canvas(el, {
+      scale,
+      useCORS: true,
+      backgroundColor: "#ffffff",
+      width,
+      height,
+      windowWidth: width,
+      windowHeight: height,
+      logging: false,
+      imageTimeout: 15000,
+      removeContainer: true,
+      scrollX: 0,
+      scrollY: 0,
+    });
+
+    if (!canvas.width || !canvas.height) {
+      throw new Error("html2canvas returned an empty canvas.");
+    }
+
+    return canvas;
+  } finally {
+    if (nextSibling && parent.contains(nextSibling)) {
+      parent.insertBefore(el, nextSibling);
+    } else {
+      parent.appendChild(el);
+    }
+
+    el.style.position = savedStyle.position ?? "";
+    el.style.top = savedStyle.top ?? "";
+    el.style.left = savedStyle.left ?? "";
+    el.style.zIndex = savedStyle.zIndex ?? "";
+    el.style.width = savedStyle.width ?? "";
+    el.style.height = savedStyle.height ?? "";
+    el.style.minWidth = savedStyle.minWidth ?? "";
+    el.style.minHeight = savedStyle.minHeight ?? "";
+    el.style.maxWidth = savedStyle.maxWidth ?? "";
+    el.style.maxHeight = savedStyle.maxHeight ?? "";
+    el.style.margin = savedStyle.margin ?? "";
+    el.style.transform = savedStyle.transform ?? "";
+    el.style.display = savedStyle.display ?? "";
+    el.style.visibility = savedStyle.visibility ?? "";
+    el.style.overflow = savedStyle.overflow ?? "";
+    el.style.boxSizing = savedStyle.boxSizing ?? "";
+  }
+}
+
 export async function exportToPDF(
   pageElements: HTMLElement[],
   options: ExportOptions = {}
 ): Promise<void> {
-  const { filename = "timeline-evidence.pdf", scale = 2, onProgress } = options;
+  const {
+    filename = "timeline-evidence.pdf",
+    scale = 2,
+    onProgress,
+  } = options;
 
   if (pageElements.length === 0) {
     throw new Error("No pages to export.");
+  }
+
+  const snapshots = snapshotPages(pageElements);
+
+  if (snapshots.length === 0) {
+    throw new Error(
+      "No page elements found in the document. Try scrolling to the top and export again."
+    );
   }
 
   const [html2canvasModule, jsPDFModule] = await Promise.all([
     import("html2canvas"),
     import("jspdf"),
   ]);
+
   const html2canvas = html2canvasModule.default;
   const { jsPDF } = jsPDFModule;
 
-  // Full-screen overlay hides the layout changes during capture
   const overlay = createExportOverlay();
 
-  // Small pause so the overlay paints before we start heavy work
-  await new Promise((r) => setTimeout(r, 50));
-
-  // Collect all scroll ancestors that need overflow: visible
-  const scrollAncestors = new Set<HTMLElement>();
-  for (const el of pageElements) {
-    for (const ancestor of getScrollAncestors(el)) {
-      scrollAncestors.add(ancestor);
-    }
-  }
-
-  // Save original styles and override to visible
-  const saved = new Map<HTMLElement, { overflow: string; overflowX: string; overflowY: string }>();
-  for (const ancestor of scrollAncestors) {
-    saved.set(ancestor, {
-      overflow: ancestor.style.overflow,
-      overflowX: ancestor.style.overflowX,
-      overflowY: ancestor.style.overflowY,
-    });
-    ancestor.style.overflow = "visible";
-    ancestor.style.overflowX = "visible";
-    ancestor.style.overflowY = "visible";
-  }
-
-  const pdf = new jsPDF({ orientation: "portrait", unit: "in", format: "letter" });
+  const pdf = new jsPDF({
+    orientation: "portrait",
+    unit: "in",
+    format: "letter",
+  });
 
   try {
-    for (let i = 0; i < pageElements.length; i++) {
-      if (i > 0) pdf.addPage("letter", "portrait");
-      onProgress?.(i + 1, pageElements.length);
+    for (let i = 0; i < snapshots.length; i++) {
+      if (i > 0) {
+        pdf.addPage("letter", "portrait");
+      }
 
-      const el = pageElements[i];
-      const canvas = await html2canvas(el, {
-        scale,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: "#ffffff",
-        width: el.offsetWidth,
-        height: el.offsetHeight,
-        logging: false,
-      });
+      onProgress?.(i + 1, snapshots.length);
 
-      const imgData = canvas.toDataURL("image/jpeg", 0.92);
-      pdf.addImage(imgData, "JPEG", 0, 0, 8.5, 11);
+      const canvas = await capturePageElement(
+        snapshots[i],
+        html2canvas,
+        scale
+      );
+
+      const imgData = canvas.toDataURL("image/png");
+      pdf.addImage(imgData, "PNG", 0, 0, LETTER_WIDTH_IN, LETTER_HEIGHT_IN);
     }
 
     pdf.save(filename);
   } finally {
-    // Restore original overflow styles
-    for (const [ancestor, styles] of saved) {
-      ancestor.style.overflow = styles.overflow;
-      ancestor.style.overflowX = styles.overflowX;
-      ancestor.style.overflowY = styles.overflowY;
-    }
-
-    // Remove overlay
     overlay.remove();
   }
 }
