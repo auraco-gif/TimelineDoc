@@ -6,7 +6,6 @@ interface DocumentPageProps {
   pageNumber: number;
   totalPages: number;
   onDescriptionChange: (sectionId: string, value: string) => void;
-  refCallback: (el: HTMLDivElement | null) => void;
 }
 
 export function DocumentPage({
@@ -14,42 +13,43 @@ export function DocumentPage({
   pageNumber,
   totalPages,
   onDescriptionChange,
-  refCallback,
 }: DocumentPageProps) {
   return (
-    // Letter proportions rendered at 680px wide for screen preview
-    // Actual PDF export captures this DOM node at 2× scale → 1360px → 8.5in
+    // True letter size: 816 × 1056 px (8.5" × 11" at 96 dpi)
+    // data-export-page is queried by lib/pdf.ts via querySelectorAll
+    // shadow-page and page-enter are preview-only; the exporter strips them from the clone
     <div
-      ref={refCallback}
-      className="bg-white shadow-page page-enter"
+      data-export-page="true"
+      className="document-page bg-white shadow-page page-enter"
       style={{
-        width: 680,
-        minHeight: 880,
-        padding: "56px 64px 48px",
+        width: 816,
+        minHeight: 1056,
+        padding: "68px 80px 60px",
         boxSizing: "border-box",
         position: "relative",
         fontFamily: "Inter, system-ui, sans-serif",
+        flexShrink: 0,
       }}
     >
-      {/* Date header — first page of section */}
-      <div className="mb-6 pb-4 border-b border-neutral-200">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-1">
+      {/* Date header */}
+      <div className="mb-6 pb-5 border-b border-neutral-200">
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-1.5">
           {page.isFirstInSection ? "Date" : "Date (continued)"}
         </p>
-        <h2 className="text-xl font-semibold text-neutral-900 leading-tight">
+        <h2 className="text-2xl font-semibold text-neutral-900 leading-tight">
           {page.dateLabel}
         </h2>
       </div>
 
       {/* Photo grid */}
-      <div className="mb-6">
+      <div className="mb-7">
         <PhotoGrid photos={page.photoBlock.photos} />
       </div>
 
       {/* Description — only on first page of each section */}
       {page.isFirstInSection && (
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400 mb-2">
             Description
           </p>
           <textarea
@@ -67,7 +67,7 @@ export function DocumentPage({
 
       {/* Page number */}
       <div
-        style={{ position: "absolute", bottom: 24, right: 32 }}
+        style={{ position: "absolute", bottom: 28, right: 40 }}
         className="text-[10px] text-neutral-300 tabular-nums"
       >
         {pageNumber} / {totalPages}

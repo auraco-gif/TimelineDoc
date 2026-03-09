@@ -1,6 +1,5 @@
 "use client";
 
-import React, { useRef, useCallback } from "react";
 import { TimelineDocument } from "@/types/document";
 import { getAllPages, updateSectionDescription } from "@/lib/layout";
 import { DocumentPage } from "@/components/DocumentPage";
@@ -14,8 +13,7 @@ interface DocumentCanvasProps {
   processingProgress?: { current: number; total: number };
   onFilesSelected: (files: File[]) => void;
   onDocumentChange: (doc: TimelineDocument) => void;
-  // Supplies ordered DOM refs to the parent for PDF export
-  pageRefsRef: React.MutableRefObject<HTMLElement[]>;
+  // pageRefsRef intentionally removed — PDF export uses querySelectorAll('[data-export-page]')
 }
 
 export function DocumentCanvas({
@@ -25,27 +23,7 @@ export function DocumentCanvas({
   processingProgress,
   onFilesSelected,
   onDocumentChange,
-  pageRefsRef,
 }: DocumentCanvasProps) {
-  const pageRefsMap = useRef<Map<string, HTMLDivElement>>(new Map());
-
-  // Callback ref factory: each page registers/deregisters itself
-  const makeRefCallback = useCallback(
-    (pageId: string, allPageIds: string[]) =>
-      (el: HTMLDivElement | null) => {
-        if (el) {
-          pageRefsMap.current.set(pageId, el);
-        } else {
-          pageRefsMap.current.delete(pageId);
-        }
-        // Keep pageRefsRef ordered by page sequence
-        pageRefsRef.current = allPageIds
-          .map((id) => pageRefsMap.current.get(id))
-          .filter((e): e is HTMLDivElement => !!e);
-      },
-    [pageRefsRef]
-  );
-
   const handleDescriptionChange = (sectionId: string, value: string) => {
     if (!document) return;
     onDocumentChange(updateSectionDescription(document, sectionId, value));
@@ -64,12 +42,11 @@ export function DocumentCanvas({
   };
 
   const pages = document ? getAllPages(document) : [];
-  const allPageIds = pages.map((p) => p.id);
   const totalPages = pages.length;
 
   return (
-    // Gray canvas background — matches Google Docs / Notion document view
-    <div className="flex-1 bg-[#f0f0ef] overflow-y-auto">
+    // overflow-auto supports both vertical scroll and horizontal scroll on narrow screens
+    <div className="flex-1 bg-[#f0f0ef] overflow-auto">
       <div className="flex flex-col items-center py-12 px-6 gap-8 min-h-full">
 
         {/* Processing state */}
@@ -119,7 +96,7 @@ export function DocumentCanvas({
           </div>
         )}
 
-        {/* Document pages */}
+        {/* Document pages — each has data-export-page="true" for PDF export */}
         {!isProcessing &&
           document &&
           pages.map((page, idx) => (
@@ -129,7 +106,6 @@ export function DocumentCanvas({
               pageNumber={idx + 1}
               totalPages={totalPages}
               onDescriptionChange={handleDescriptionChange}
-              refCallback={makeRefCallback(page.id, allPageIds)}
             />
           ))}
 

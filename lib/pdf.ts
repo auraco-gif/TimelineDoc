@@ -1,6 +1,16 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// PDF export
-// Stable DOM -> PDF export for letter-size timeline pages
+// PDF export — clone-based, never touches live React DOM nodes
+//
+// For each page element (queried by [data-export-page="true"]):
+//   1. Clone it into an off-screen export root attached to document.body
+//   2. Strip preview-only styles (shadow, animation)
+//   3. Wait for paint + images + fonts
+//   4. Capture with html2canvas
+//   5. Add to jsPDF with aspect-ratio-preserving placement
+//
+// CORS note: images use blob: URLs created by URL.createObjectURL() from local
+// files — these are same-origin and never require CORS. useCORS: true is kept
+// for future remote image support but is not needed for the current MVP.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface ExportOptions {
@@ -9,20 +19,7 @@ export interface ExportOptions {
   onProgress?: (current: number, total: number) => void;
 }
 
-interface PageSnapshot {
-  el: HTMLElement;
-  parent: Node;
-  nextSibling: Node | null;
-  savedStyle: Record<string, string>;
-}
-
-const LETTER_WIDTH_IN = 8.5;
-const LETTER_HEIGHT_IN = 11;
-
-// 96 CSS px per inch is the standard browser CSS reference pixel.
-const CSS_PX_PER_IN = 96;
-const LETTER_WIDTH_PX = Math.round(LETTER_WIDTH_IN * CSS_PX_PER_IN);   // 816
-const LETTER_HEIGHT_PX = Math.round(LETTER_HEIGHT_IN * CSS_PX_PER_IN); // 1056
+// ── helpers ───────────────────────────────────────────────────────────────────
 
 function createExportOverlay(): HTMLDivElement {
   const overlay = document.createElement("div");
@@ -43,262 +40,210 @@ function createExportOverlay(): HTMLDivElement {
   return overlay;
 }
 
-function snapshotPages(pageElements: HTMLElement[]): PageSnapshot[] {
-  const out: PageSnapshot[] = [];
-
-  for (const el of pageElements) {
-    const parent = el.parentNode;
-    if (!parent) continue;
-
-    out.push({
-      el,
-      parent,
-      nextSibling: el.nextSibling,
-      savedStyle: {
-        position: el.style.position,
-        top: el.style.top,
-        left: el.style.left,
-        zIndex: el.style.zIndex,
-        width: el.style.width,
-        height: el.style.height,
-        minWidth: el.style.minWidth,
-        minHeight: el.style.minHeight,
-        maxWidth: el.style.maxWidth,
-        maxHeight: el.style.maxHeight,
-        margin: el.style.margin,
-        transform: el.style.transform,
-        display: el.style.display,
-        visibility: el.style.visibility,
-        overflow: el.style.overflow,
-        boxSizing: el.style.boxSizing,
-      },
-    });
-  }
-
-  return out;
+/**
+ * Off-screen container for cloned pages.
+ * Must NOT use display:none or visibility:hidden — html2canvas needs it
+ * to be laid out. Placed far off-screen at left: -10000px instead.
+ */
+function createExportRoot(): HTMLDivElement {
+  const root = document.createElement("div");
+  Object.assign(root.style, {
+    position: "fixed",
+    left: "-10000px",
+    top: "0",
+    width: "816px",
+    background: "#ffffff",
+    pointerEvents: "none",
+    zIndex: "1",
+  });
+  document.body.appendChild(root);
+  return root;
 }
 
 function waitForNextFrame(): Promise<void> {
-  return new Promise((resolve) => {
-    requestAnimationFrame(() => resolve());
-  });
+  return new Promise((resolve) => requestAnimationFrame(() => resolve()));
 }
 
-async function waitForPaint(frames: number = 2): Promise<void> {
+async function waitForPaint(frames = 2): Promise<void> {
   for (let i = 0; i < frames; i++) {
     await waitForNextFrame();
   }
 }
 
-async function waitForImages(container: HTMLElement): Promise<void> {
-  const images = Array.from(container.querySelectorAll("img"));
+function waitForImages(container: HTMLElement): Promise<void> {
+  const imgs = Array.from(container.querySelectorAll<HTMLImageElement>("img"));
+  if (imgs.length === 0) return Promise.resolve();
 
-  await Promise.all(
-    images.map((img) => {
-      if (img.complete && img.naturalWidth > 0) {
-        return Promise.resolve();
-      }
-
-      return new Promise<void>((resolve) => {
-        const done = () => {
-          img.removeEventListener("load", done);
-          img.removeEventListener("error", done);
-          resolve();
-        };
-
-        img.addEventListener("load", done, { once: true });
-        img.addEventListener("error", done, { once: true });
-      });
-    })
-  );
+  return Promise.all(
+    imgs.map(
+      (img) =>
+        new Promise<void>((resolve) => {
+          if (img.complete && img.naturalWidth > 0) {
+            resolve();
+            return;
+          }
+          const done = () => resolve();
+          img.addEventListener("load", done, { once: true });
+          img.addEventListener("error", done, { once: true });
+          // Safety timeout — don't block export indefinitely
+          setTimeout(done, 8000);
+        })
+    )
+  ).then(() => undefined);
 }
 
 async function waitForFonts(): Promise<void> {
-  const anyDoc = document as Document & {
-    fonts?: {
-      ready: Promise<unknown>;
-    };
-  };
-
-  if (anyDoc.fonts?.ready) {
-    await anyDoc.fonts.ready;
+  if (typeof document !== "undefined" && document.fonts?.ready) {
+    await document.fonts.ready;
   }
 }
 
-function getRenderableSize(el: HTMLElement): { width: number; height: number } {
-  const rect = el.getBoundingClientRect();
+interface PdfPlacement {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
 
-  const candidatesW = [
-    Math.round(rect.width),
-    el.offsetWidth,
-    el.clientWidth,
-    el.scrollWidth,
-  ].filter((n) => Number.isFinite(n) && n > 0);
+/**
+ * Letter page: 8.5 × 11 inches.
+ * Fit the captured image while preserving its aspect ratio, centered on the page.
+ * A letter-ratio canvas (816 × 1056) will fill the page exactly.
+ * Taller or shorter pages get letterboxed.
+ */
+function getPdfPlacement(canvasWidth: number, canvasHeight: number): PdfPlacement {
+  const PAGE_W = 8.5;
+  const PAGE_H = 11;
 
-  const candidatesH = [
-    Math.round(rect.height),
-    el.offsetHeight,
-    el.clientHeight,
-    el.scrollHeight,
-  ].filter((n) => Number.isFinite(n) && n > 0);
+  if (canvasWidth <= 0 || canvasHeight <= 0) {
+    return { x: 0, y: 0, w: PAGE_W, h: PAGE_H };
+  }
+
+  const canvasRatio = canvasWidth / canvasHeight;
+  const pageRatio = PAGE_W / PAGE_H;
+
+  let w: number;
+  let h: number;
+
+  if (canvasRatio > pageRatio) {
+    // Wider than page — fit to width
+    w = PAGE_W;
+    h = PAGE_W / canvasRatio;
+  } else {
+    // Taller than page — fit to height
+    h = PAGE_H;
+    w = PAGE_H * canvasRatio;
+  }
 
   return {
-    width: candidatesW[0] ?? 0,
-    height: candidatesH[0] ?? 0,
+    x: (PAGE_W - w) / 2,
+    y: (PAGE_H - h) / 2,
+    w,
+    h,
   };
 }
 
-async function capturePageElement(
-  snapshot: PageSnapshot,
-  html2canvas: (el: HTMLElement, opts: object) => Promise<HTMLCanvasElement>,
-  scale: number
-): Promise<HTMLCanvasElement> {
-  const { el, parent, nextSibling, savedStyle } = snapshot;
-
-  // Move first, then force a stable printable layout.
-  document.body.appendChild(el);
-
-  Object.assign(el.style, {
-    position: "fixed",
-    top: "0",
-    left: "0",
-    zIndex: "99998",
-    width: `${LETTER_WIDTH_PX}px`,
-    height: `${LETTER_HEIGHT_PX}px`,
-    minWidth: `${LETTER_WIDTH_PX}px`,
-    minHeight: `${LETTER_HEIGHT_PX}px`,
-    maxWidth: `${LETTER_WIDTH_PX}px`,
-    maxHeight: `${LETTER_HEIGHT_PX}px`,
-    margin: "0",
-    transform: "none",
-    display: "block",
-    visibility: "visible",
-    overflow: "hidden",
-    boxSizing: "border-box",
-    background: "#ffffff",
-  });
-
-  try {
-    // Let browser finish layout after the node is moved and resized.
-    await waitForPaint(2);
-    await waitForImages(el);
-    await waitForFonts();
-    await waitForPaint(1);
-
-    let { width, height } = getRenderableSize(el);
-
-    // Final fallback: for letter export, use explicit page size.
-    if (width <= 0) width = LETTER_WIDTH_PX;
-    if (height <= 0) height = LETTER_HEIGHT_PX;
-
-    if (width <= 0 || height <= 0) {
-      throw new Error(`Page has invalid size after layout: ${width} x ${height}`);
-    }
-
-    const canvas = await html2canvas(el, {
-      scale,
-      useCORS: true,
-      backgroundColor: "#ffffff",
-      width,
-      height,
-      windowWidth: width,
-      windowHeight: height,
-      logging: false,
-      imageTimeout: 15000,
-      removeContainer: true,
-      scrollX: 0,
-      scrollY: 0,
-    });
-
-    if (!canvas.width || !canvas.height) {
-      throw new Error("html2canvas returned an empty canvas.");
-    }
-
-    return canvas;
-  } finally {
-    if (nextSibling && parent.contains(nextSibling)) {
-      parent.insertBefore(el, nextSibling);
-    } else {
-      parent.appendChild(el);
-    }
-
-    el.style.position = savedStyle.position ?? "";
-    el.style.top = savedStyle.top ?? "";
-    el.style.left = savedStyle.left ?? "";
-    el.style.zIndex = savedStyle.zIndex ?? "";
-    el.style.width = savedStyle.width ?? "";
-    el.style.height = savedStyle.height ?? "";
-    el.style.minWidth = savedStyle.minWidth ?? "";
-    el.style.minHeight = savedStyle.minHeight ?? "";
-    el.style.maxWidth = savedStyle.maxWidth ?? "";
-    el.style.maxHeight = savedStyle.maxHeight ?? "";
-    el.style.margin = savedStyle.margin ?? "";
-    el.style.transform = savedStyle.transform ?? "";
-    el.style.display = savedStyle.display ?? "";
-    el.style.visibility = savedStyle.visibility ?? "";
-    el.style.overflow = savedStyle.overflow ?? "";
-    el.style.boxSizing = savedStyle.boxSizing ?? "";
-  }
-}
+// ── main export ───────────────────────────────────────────────────────────────
 
 export async function exportToPDF(
   pageElements: HTMLElement[],
   options: ExportOptions = {}
 ): Promise<void> {
-  const {
-    filename = "timeline-evidence.pdf",
-    scale = 2,
-    onProgress,
-  } = options;
+  const { filename = "timeline-evidence.pdf", scale = 2, onProgress } = options;
 
   if (pageElements.length === 0) {
-    throw new Error("No pages to export.");
-  }
-
-  const snapshots = snapshotPages(pageElements);
-
-  if (snapshots.length === 0) {
-    throw new Error(
-      "No page elements found in the document. Try scrolling to the top and export again."
-    );
+    console.warn("exportToPDF: no page elements provided");
+    return;
   }
 
   const [html2canvasModule, jsPDFModule] = await Promise.all([
     import("html2canvas"),
     import("jspdf"),
   ]);
-
   const html2canvas = html2canvasModule.default;
   const { jsPDF } = jsPDFModule;
 
-  const overlay = createExportOverlay();
+  // Ensure fonts are ready before capturing
+  await waitForFonts();
 
-  const pdf = new jsPDF({
-    orientation: "portrait",
-    unit: "in",
-    format: "letter",
-  });
+  const overlay = createExportOverlay();
+  const exportRoot = createExportRoot();
+
+  // Give the overlay time to paint before heavy work begins
+  await waitForPaint(2);
+
+  const pdf = new jsPDF({ orientation: "portrait", unit: "in", format: "letter" });
 
   try {
-    for (let i = 0; i < snapshots.length; i++) {
-      if (i > 0) {
-        pdf.addPage("letter", "portrait");
+    for (let i = 0; i < pageElements.length; i++) {
+      if (i > 0) pdf.addPage("letter", "portrait");
+      onProgress?.(i + 1, pageElements.length);
+
+      const original = pageElements[i];
+
+      // Deep clone — images keep their blob: src, no re-fetch needed
+      const clone = original.cloneNode(true) as HTMLElement;
+
+      // Strip preview-only decorations so they don't bleed into the PDF
+      clone.style.boxShadow = "none";
+      clone.style.animation = "none";
+      clone.style.transition = "none";
+      clone.classList.remove("shadow-page", "page-enter");
+
+      // Enforce correct export dimensions (clone may inherit browser styles)
+      clone.style.width = "816px";
+      clone.style.minHeight = "1056px";
+      clone.style.position = "relative";
+      clone.style.background = "#ffffff";
+
+      // Replace textarea values with plain divs so html2canvas captures the text
+      // (html2canvas does not reliably render <textarea> content)
+      clone.querySelectorAll<HTMLTextAreaElement>("textarea").forEach((ta) => {
+        const replacement = document.createElement("div");
+        replacement.style.cssText = ta.style.cssText;
+        replacement.className = ta.className;
+        Object.assign(replacement.style, {
+          whiteSpace: "pre-wrap",
+          wordBreak: "break-word",
+        });
+        replacement.textContent = ta.value || ta.placeholder;
+        if (!ta.value && ta.placeholder) {
+          replacement.style.color = "#d1d5db"; // placeholder color
+        }
+        ta.parentNode?.replaceChild(replacement, ta);
+      });
+
+      exportRoot.innerHTML = "";
+      exportRoot.appendChild(clone);
+
+      // Wait for layout + images to be ready
+      await waitForPaint(2);
+      await waitForImages(clone);
+
+      const canvas = await html2canvas(clone, {
+        scale,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#ffffff",
+        width: 816,
+        windowWidth: 816,
+        logging: false,
+      });
+
+      if (canvas.width === 0 || canvas.height === 0) {
+        console.warn(`exportToPDF: page ${i + 1} produced a 0×0 canvas, skipping`);
+        continue;
       }
 
-      onProgress?.(i + 1, snapshots.length);
-
-      const canvas = await capturePageElement(
-        snapshots[i],
-        html2canvas,
-        scale
-      );
-
+      // PNG preserves sharpness without JPEG compression artifacts
       const imgData = canvas.toDataURL("image/png");
-      pdf.addImage(imgData, "PNG", 0, 0, LETTER_WIDTH_IN, LETTER_HEIGHT_IN);
+      const { x, y, w, h } = getPdfPlacement(canvas.width, canvas.height);
+      pdf.addImage(imgData, "PNG", x, y, w, h);
     }
 
     pdf.save(filename);
   } finally {
+    exportRoot.remove();
     overlay.remove();
   }
 }

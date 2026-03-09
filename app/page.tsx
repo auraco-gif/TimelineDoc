@@ -15,14 +15,23 @@ type ProcessingState =
   | { status: "building" }
   | { status: "exporting"; progress: number; total: number };
 
+function waitForPaint(frames = 2): Promise<void> {
+  return new Promise((resolve) => {
+    let count = 0;
+    const tick = () => {
+      if (++count >= frames) resolve();
+      else requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+}
+
 export default function Home() {
   const [doc, setDoc] = useState<TimelineDocument | null>(null);
   const [allPhotos, setAllPhotos] = useState<Photo[]>([]);
   const [processing, setProcessing] = useState<ProcessingState>({ status: "idle" });
 
-  // Ordered list of DOM elements for each page — populated by DocumentCanvas
-  const pageRefsRef = useRef<HTMLElement[]>([]);
-  // Hidden file input for navbar upload button
+  // Hidden file input — triggered by navbar Upload button
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isProcessing = processing.status !== "idle";
@@ -48,7 +57,6 @@ export default function Home() {
       setProcessing({ status: "extracting", progress: 0, total: files.length });
 
       try {
-        // Extract metadata in batches to keep UI responsive for large uploads
         const BATCH = 20;
         const extracted: Photo[] = [];
         for (let i = 0; i < files.length; i += BATCH) {
@@ -64,14 +72,10 @@ export default function Home() {
 
         setProcessing({ status: "building" });
 
-        // Merge with any previously uploaded photos
         const merged = [...allPhotos, ...extracted];
-
-        // Small delay so "building" label is visible
         await new Promise((r) => setTimeout(r, 50));
 
         const newDoc = buildDocument(merged);
-
         setAllPhotos(merged);
         setDoc(newDoc);
       } catch (err) {
@@ -84,13 +88,22 @@ export default function Home() {
   );
 
   const handleExport = useCallback(async () => {
-    const refs = pageRefsRef.current;
-    if (refs.length === 0) return;
+    // Wait for React layout to settle before querying the DOM
+    await waitForPaint(2);
 
-    setProcessing({ status: "exporting", progress: 0, total: refs.length });
+    const pageElements = Array.from(
+      window.document.querySelectorAll<HTMLElement>('[data-export-page="true"]')
+    );
+
+    if (pageElements.length === 0) {
+      console.warn("PDF export: no [data-export-page] elements found in the document.");
+      return;
+    }
+
+    setProcessing({ status: "exporting", progress: 0, total: pageElements.length });
 
     try {
-      await exportToPDF(refs, {
+      await exportToPDF(pageElements, {
         filename: "timeline-evidence.pdf",
         scale: 2,
         onProgress: (current, total) => {
@@ -108,12 +121,10 @@ export default function Home() {
     revokePhotoUrls(allPhotos);
     setAllPhotos([]);
     setDoc(null);
-    pageRefsRef.current = [];
   }, [allPhotos]);
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      {/* Fixed top navigation */}
       {/* Hidden global file input — triggered by navbar Upload button */}
       <input
         ref={fileInputRef}
@@ -151,14 +162,13 @@ export default function Home() {
           }
           onFilesSelected={handleFiles}
           onDocumentChange={setDoc}
-          pageRefsRef={pageRefsRef}
         />
 
         {/* Future: right panel slot */}
         {/* <RightPanel /> */}
       </main>
 
-      {/* Status bar — shows photo count when document exists */}
+      {/* Status bar */}
       {doc && !isProcessing && (
         <div className="h-7 border-t border-neutral-200 bg-white/80 backdrop-blur-sm flex items-center px-5 gap-4 shrink-0">
           <span className="text-[11px] text-neutral-400 tabular-nums">
