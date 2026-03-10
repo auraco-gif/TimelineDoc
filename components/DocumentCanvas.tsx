@@ -78,7 +78,7 @@ export function DocumentCanvas({
 
         {/* Empty state */}
         {!isProcessing && !document && (
-          <div className="flex flex-col items-center gap-9 py-14 w-full max-w-lg">
+          <div className="flex flex-col items-center gap-8 py-16 w-full max-w-lg">
 
             {/* Hero */}
             <div className="text-center space-y-2.5">
@@ -99,39 +99,6 @@ export function DocumentCanvas({
               Private by default — your photos are used only to generate your
               PDF and are not publicly shared.
             </p>
-
-            {/* Technical hints */}
-            <div className="flex items-center gap-4 text-[11px] text-neutral-300">
-              <span>JPG · PNG</span>
-              <span>·</span>
-              <span>EXIF date extraction</span>
-              <span>·</span>
-              <span>50–200 photos</span>
-              <span>·</span>
-              <span>Letter size PDF</span>
-            </div>
-
-            {/* Use cases */}
-            <div className="flex flex-col items-center gap-3 w-full">
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-300">
-                Perfect for
-              </p>
-              <div className="flex flex-wrap justify-center gap-2">
-                {[
-                  "Immigration evidence",
-                  "Visa application documents",
-                  "Relationship / marriage timeline",
-                  "Personal records",
-                ].map((label) => (
-                  <span
-                    key={label}
-                    className="px-3 py-1.5 rounded-full text-[11px] font-medium text-neutral-500 bg-white border border-neutral-200"
-                  >
-                    {label}
-                  </span>
-                ))}
-              </div>
-            </div>
 
             {/* Footer */}
             <footer className="flex items-center gap-4 text-[11px] text-neutral-400 pt-2">
