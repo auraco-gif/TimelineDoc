@@ -16,6 +16,7 @@ interface DocumentCanvasProps {
   processingProgress?: { current: number; total: number };
   onFilesSelected: (files: File[]) => void;
   onDocumentChange: (doc: TimelineDocument) => void;
+  onFeedbackClick: () => void;
   // pageRefsRef intentionally removed — PDF export uses querySelectorAll('[data-export-page]')
 }
 
@@ -27,6 +28,7 @@ export function DocumentCanvas({
   processingProgress,
   onFilesSelected,
   onDocumentChange,
+  onFeedbackClick,
 }: DocumentCanvasProps) {
   const handleDescriptionChange = (sectionId: string, value: string) => {
     if (!document) return;
@@ -77,18 +79,30 @@ export function DocumentCanvas({
 
         {/* Empty state */}
         {!isProcessing && !document && (
-          <div className="flex flex-col items-center justify-center gap-10 py-16 w-full max-w-2xl">
+          <div className="flex flex-col items-center gap-9 py-14 w-full max-w-lg">
+
+            {/* Hero */}
             <div className="text-center space-y-2.5">
               <h1 className="text-2xl font-semibold text-neutral-800 tracking-tight">
-                Build your timeline document
+                Turn your photos into a clean timeline PDF
               </h1>
-              <p className="text-sm text-neutral-400 max-w-[300px] mx-auto leading-relaxed">
-                Upload photos and we&apos;ll sort them by date and generate a
-                clean, printable PDF — ready for visa or immigration submission.
+              <p className="text-sm text-neutral-400 max-w-[340px] mx-auto leading-relaxed">
+                Upload photos, auto-sort them by date, and generate a printable
+                PDF for visa, immigration, or relationship evidence.
               </p>
             </div>
+
+            {/* Upload zone */}
             <UploadZone onFiles={onFilesSelected} isProcessing={false} />
-            <div className="flex items-center gap-5 text-[11px] text-neutral-300">
+
+            {/* Privacy line */}
+            <p className="text-[11px] text-neutral-400 leading-relaxed text-center max-w-[320px]">
+              Private by default — your photos are used only to generate your
+              PDF and are not publicly shared.
+            </p>
+
+            {/* Technical hints */}
+            <div className="flex items-center gap-4 text-[11px] text-neutral-300">
               <span>JPG · PNG</span>
               <span>·</span>
               <span>EXIF date extraction</span>
@@ -97,6 +111,46 @@ export function DocumentCanvas({
               <span>·</span>
               <span>Letter size PDF</span>
             </div>
+
+            {/* Use cases */}
+            <div className="flex flex-col items-center gap-3 w-full">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-300">
+                Perfect for
+              </p>
+              <div className="flex flex-wrap justify-center gap-2">
+                {[
+                  "Immigration evidence",
+                  "Visa application documents",
+                  "Relationship / marriage timeline",
+                  "Personal records",
+                ].map((label) => (
+                  <span
+                    key={label}
+                    className="px-3 py-1.5 rounded-full text-[11px] font-medium text-neutral-500 bg-white border border-neutral-200"
+                  >
+                    {label}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <footer className="flex items-center gap-4 text-[11px] text-neutral-400 pt-2">
+              <button
+                onClick={onFeedbackClick}
+                className="hover:text-neutral-600 transition-colors underline underline-offset-2"
+              >
+                Send feedback
+              </button>
+              <span className="text-neutral-200">·</span>
+              <a
+                href="mailto:auraco.helpdesk@gmail.com"
+                className="hover:text-neutral-600 transition-colors underline underline-offset-2"
+              >
+                Contact
+              </a>
+            </footer>
+
           </div>
         )}
 
