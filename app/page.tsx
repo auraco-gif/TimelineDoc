@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { DocumentCanvas } from "@/components/DocumentCanvas";
-import { FeedbackModal } from "@/components/FeedbackModal";
+import { FeedbackTrigger } from "@/components/FeedbackTrigger";
 import { extractAllPhotos, revokePhotoUrls } from "@/lib/metadata";
 import { buildDocument } from "@/lib/layout";
 import { exportToPDF } from "@/lib/pdf";
@@ -31,7 +31,6 @@ export default function Home() {
   const [doc, setDoc] = useState<TimelineDocument | null>(null);
   const [allPhotos, setAllPhotos] = useState<Photo[]>([]);
   const [processing, setProcessing] = useState<ProcessingState>({ status: "idle" });
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   // Hidden file input — triggered by navbar Upload button
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -127,11 +126,6 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      <FeedbackModal
-        open={feedbackOpen}
-        onClose={() => setFeedbackOpen(false)}
-      />
-
       {/* Hidden global file input — triggered by navbar Upload button */}
       <input
         ref={fileInputRef}
@@ -170,7 +164,6 @@ export default function Home() {
           }
           onFilesSelected={handleFiles}
           onDocumentChange={setDoc}
-          onFeedbackClick={() => setFeedbackOpen(true)}
         />
 
         {/* Future: right panel slot */}
@@ -193,12 +186,7 @@ export default function Home() {
             {doc.sections.reduce((sum, s) => sum + s.pages.length, 0) !== 1 ? "s" : ""}
           </span>
           <span className="flex-1" />
-          <button
-            onClick={() => setFeedbackOpen(true)}
-            className="text-[11px] text-neutral-400 hover:text-neutral-600 transition-colors"
-          >
-            Send feedback
-          </button>
+          <FeedbackTrigger className="text-[11px] text-neutral-400" />
           <span className="text-neutral-200">·</span>
           <button
             onClick={handleReset}

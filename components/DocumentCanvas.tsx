@@ -5,6 +5,7 @@ import { getAllPages, updateSectionDescription } from "@/lib/layout";
 import { DocumentPage } from "@/components/DocumentPage";
 import { UploadZone } from "@/components/UploadZone";
 import { Spinner } from "@/components/ui/Spinner";
+import { FeedbackTrigger } from "@/components/FeedbackTrigger";
 
 interface DocumentCanvasProps {
   document: TimelineDocument | null;
@@ -16,7 +17,6 @@ interface DocumentCanvasProps {
   processingProgress?: { current: number; total: number };
   onFilesSelected: (files: File[]) => void;
   onDocumentChange: (doc: TimelineDocument) => void;
-  onFeedbackClick: () => void;
   // pageRefsRef intentionally removed — PDF export uses querySelectorAll('[data-export-page]')
 }
 
@@ -28,7 +28,6 @@ export function DocumentCanvas({
   processingProgress,
   onFilesSelected,
   onDocumentChange,
-  onFeedbackClick,
 }: DocumentCanvasProps) {
   const handleDescriptionChange = (sectionId: string, value: string) => {
     if (!document) return;
@@ -136,12 +135,7 @@ export function DocumentCanvas({
 
             {/* Footer */}
             <footer className="flex items-center gap-4 text-[11px] text-neutral-400 pt-2">
-              <button
-                onClick={onFeedbackClick}
-                className="hover:text-neutral-600 transition-colors underline underline-offset-2"
-              >
-                Send feedback
-              </button>
+              <FeedbackTrigger className="text-[11px] text-neutral-400" />
               <span className="text-neutral-200">·</span>
               <a
                 href="mailto:auraco.helpdesk@gmail.com"
