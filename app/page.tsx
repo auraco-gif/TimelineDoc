@@ -154,6 +154,7 @@ export default function Home() {
         <DocumentCanvas
           document={doc}
           isProcessing={isProcessing}
+          isExporting={isExporting}
           processingLabel={processingLabel}
           processingProgress={
             processing.status === "extracting" || processing.status === "exporting"

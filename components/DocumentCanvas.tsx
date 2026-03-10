@@ -9,6 +9,9 @@ import { Spinner } from "@/components/ui/Spinner";
 interface DocumentCanvasProps {
   document: TimelineDocument | null;
   isProcessing: boolean;
+  // When true, pages must remain mounted so pdf.ts can query and capture them.
+  // The pdf.ts overlay covers the screen, so the user never sees the pages during export.
+  isExporting: boolean;
   processingLabel?: string;
   processingProgress?: { current: number; total: number };
   onFilesSelected: (files: File[]) => void;
@@ -19,6 +22,7 @@ interface DocumentCanvasProps {
 export function DocumentCanvas({
   document,
   isProcessing,
+  isExporting,
   processingLabel,
   processingProgress,
   onFilesSelected,
@@ -96,8 +100,10 @@ export function DocumentCanvas({
           </div>
         )}
 
-        {/* Document pages — each has data-export-page="true" for PDF export */}
-        {!isProcessing &&
+        {/* Document pages — each has data-export-page="true" for PDF export.
+            Pages must stay mounted during export (isExporting) even though
+            isProcessing is also true then — pdf.ts needs them in the DOM. */}
+        {(!isProcessing || isExporting) &&
           document &&
           pages.map((page, idx) => (
             <DocumentPage
@@ -110,7 +116,7 @@ export function DocumentCanvas({
           ))}
 
         {/* Add more photos */}
-        {!isProcessing && document && (
+        {(!isProcessing || isExporting) && document && (
           <div className="pb-6">
             <button
               onClick={handleAddMore}

@@ -105,6 +105,63 @@ interface PdfPlacement {
   h: number;
 }
 
+// Canonical letter-size fallback for this project (8.5" × 11" @ 96 dpi)
+const LETTER_W = 816;
+const LETTER_H = 1056;
+
+/**
+ * Try multiple methods to read a page element's rendered dimensions.
+ * Never throws — returns canonical letter size as final fallback.
+ *
+ * Used on the ORIGINAL live element before cloning. The element may be
+ * detached (0×0 getBCR) if React unmounted it, e.g. when isProcessing=true
+ * hid the pages — the fallback ensures the clone still gets valid dimensions.
+ */
+function getPreferredPageSize(el: HTMLElement): { width: number; height: number; source: string } {
+  const rect = el.getBoundingClientRect();
+  if (rect.width > 0 && rect.height > 0) {
+    return { width: Math.round(rect.width), height: Math.round(rect.height), source: "getBoundingClientRect" };
+  }
+
+  const computed = window.getComputedStyle(el);
+  const cw = parseFloat(computed.width ?? "0");
+  const ch = parseFloat(computed.height ?? "0");
+  if (cw > 0 && ch > 0) {
+    return { width: Math.round(cw), height: Math.round(ch), source: "computedStyle" };
+  }
+
+  if (el.offsetWidth > 0 && el.offsetHeight > 0) {
+    return { width: el.offsetWidth, height: el.offsetHeight, source: "offsetSize" };
+  }
+
+  return { width: LETTER_W, height: LETTER_H, source: "canonicalFallback" };
+}
+
+/**
+ * Measure a clone that IS mounted in the export root.
+ * Same fallback chain — but the clone has explicit style dimensions set,
+ * so getBoundingClientRect should always return valid values here.
+ */
+function getMeasuredExportSize(el: HTMLElement): { width: number; height: number; source: string } {
+  const rect = el.getBoundingClientRect();
+  if (rect.width > 0 && rect.height > 0) {
+    return { width: Math.round(rect.width), height: Math.round(rect.height), source: "getBoundingClientRect" };
+  }
+
+  const computed = window.getComputedStyle(el);
+  const cw = parseFloat(computed.width ?? "0");
+  const ch = parseFloat(computed.height ?? "0");
+  if (cw > 0 && ch > 0) {
+    return { width: Math.round(cw), height: Math.round(ch), source: "computedStyle" };
+  }
+
+  if (el.offsetWidth > 0 && el.offsetHeight > 0) {
+    return { width: el.offsetWidth, height: el.offsetHeight, source: "offsetSize" };
+  }
+
+  return { width: LETTER_W, height: LETTER_H, source: "canonicalFallback" };
+}
+
 /**
  * Preserve aspect ratio and center on a letter page (8.5 × 11 in).
  * A 816×1056 capture (letter ratio) fills the page exactly at 0,0.
@@ -232,17 +289,12 @@ export async function exportToPDF(
 
       const original = pageElements[i];
 
-      // ── 1. Measure the live rendered rect ──────────────────────────────────
-      const rect = original.getBoundingClientRect();
-      const exportWidth = Math.round(rect.width);
-      const exportHeight = Math.round(rect.height);
-
-      if (exportWidth <= 0 || exportHeight <= 0) {
-        throw new Error(
-          `Page ${i + 1} has zero dimensions (${exportWidth}×${exportHeight}). ` +
-          `Make sure all pages are fully rendered and visible before exporting.`
-        );
-      }
+      // ── 1. Read preferred size from the live element ───────────────────────
+      // The original may be detached (0×0 getBCR) if React unmounted pages
+      // while isProcessing=true. getPreferredPageSize never throws — it falls
+      // back through computed style, offset, and finally canonical 816×1056.
+      const originalRect = original.getBoundingClientRect();
+      const preferred = getPreferredPageSize(original);
 
       // ── 2. Clone — original is never moved or mutated ─────────────────────
       const clone = original.cloneNode(true) as HTMLElement;
@@ -253,16 +305,19 @@ export async function exportToPDF(
       clone.style.transition = "none";
       clone.classList.remove("shadow-page", "page-enter");
 
-      // ── 3. Freeze clone to exact measured dimensions ───────────────────────
-      // No reflow allowed: set width, height, minHeight, maxHeight all together.
-      clone.style.width = `${exportWidth}px`;
-      clone.style.height = `${exportHeight}px`;
-      clone.style.minHeight = `${exportHeight}px`;
-      clone.style.maxHeight = `${exportHeight}px`;
-      clone.style.boxSizing = "border-box";
-      clone.style.overflow = "hidden";
-      clone.style.position = "relative";
-      clone.style.background = "#ffffff";
+      // ── 3. Freeze clone to preferred dimensions ────────────────────────────
+      Object.assign(clone.style, {
+        width: `${preferred.width}px`,
+        height: `${preferred.height}px`,
+        minHeight: `${preferred.height}px`,
+        maxHeight: `${preferred.height}px`,
+        boxSizing: "border-box",
+        overflow: "hidden",
+        position: "relative",
+        background: "#ffffff",
+        margin: "0",
+        flex: "none",
+      });
 
       // ── 4. Mutate clone for html2canvas compatibility ──────────────────────
       replaceImgsWithBackgroundDivs(clone);
@@ -274,8 +329,23 @@ export async function exportToPDF(
 
       await waitForPaint(2);
       await waitForImages(clone);
+      await waitForFonts();
 
-      // ── 6. Capture ────────────────────────────────────────────────────────
+      // ── 6. Measure the MOUNTED clone (authoritative dimensions) ────────────
+      // The clone is now in the DOM with explicit styles; its rect is reliable.
+      const measured = getMeasuredExportSize(clone);
+      const exportWidth = measured.width;
+      const exportHeight = measured.height;
+
+      console.debug("[pdf] page", i + 1, {
+        originalRect: { width: originalRect.width, height: originalRect.height },
+        preferredSource: preferred.source,
+        preferred: { width: preferred.width, height: preferred.height },
+        measuredSource: measured.source,
+        cloneMeasured: { width: exportWidth, height: exportHeight },
+      });
+
+      // ── 7. Capture ────────────────────────────────────────────────────────
       const canvas = await html2canvas(clone, {
         scale,
         useCORS: true,
@@ -295,7 +365,7 @@ export async function exportToPDF(
         continue;
       }
 
-      // ── 7. Place image on PDF page, preserving aspect ratio ───────────────
+      // ── 8. Place image on PDF page, preserving aspect ratio ───────────────
       const imgData = canvas.toDataURL("image/png");
       const { x, y, w, h } = getPdfPlacement(canvas.width, canvas.height);
       pdf.addImage(imgData, "PNG", x, y, w, h);
