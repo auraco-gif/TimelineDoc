@@ -15,15 +15,17 @@ export function DocumentPage({
   onDescriptionChange,
 }: DocumentPageProps) {
   return (
-    // True letter size: 816 × 1056 px (8.5" × 11" at 96 dpi)
-    // data-export-page is queried by lib/pdf.ts via querySelectorAll
-    // shadow-page and page-enter are preview-only; the exporter strips them from the clone
+    // Exact letter size: 816 × 1056 px (8.5" × 11" at 96 dpi, scale 1)
+    // Fixed height (not minHeight) ensures preview and export share identical
+    // page box dimensions. overflow:hidden prevents content from leaking out.
+    // shadow-page / page-enter are preview-only — stripped in lib/pdf.ts clone.
     <div
       data-export-page="true"
       className="document-page bg-white shadow-page page-enter"
       style={{
         width: 816,
-        minHeight: 1056,
+        height: 1056,
+        overflow: "hidden",
         padding: "68px 80px 60px",
         boxSizing: "border-box",
         position: "relative",

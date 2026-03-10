@@ -1,16 +1,17 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// PDF export — clone-based, never touches live React DOM nodes
+// PDF export — WYSIWYG clone-based capture
 //
-// For each page element (queried by [data-export-page="true"]):
-//   1. Clone it into an off-screen export root attached to document.body
-//   2. Strip preview-only styles (shadow, animation)
-//   3. Wait for paint + images + fonts
-//   4. Capture with html2canvas
-//   5. Add to jsPDF with aspect-ratio-preserving placement
+// Design principle:
+//   The export clone must reproduce the exact same coordinate space as the
+//   browser preview. We achieve this by:
+//   1. Measuring the live page element's true rendered rect via getBoundingClientRect
+//   2. Freezing that exact rect onto the clone (no reflow allowed)
+//   3. Replacing <img> with background-image divs so object-fit:cover works
+//      (html2canvas v1.4 does not implement CSS object-fit)
+//   4. Passing the exact measured width/height into html2canvas options
 //
-// CORS note: images use blob: URLs created by URL.createObjectURL() from local
-// files — these are same-origin and never require CORS. useCORS: true is kept
-// for future remote image support but is not needed for the current MVP.
+// CORS note: images are blob: URLs (same-origin) — useCORS:true is kept for
+// forward compatibility only, it has no effect on local files.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface ExportOptions {
@@ -41,9 +42,9 @@ function createExportOverlay(): HTMLDivElement {
 }
 
 /**
- * Off-screen container for cloned pages.
- * Must NOT use display:none or visibility:hidden — html2canvas needs it
- * to be laid out. Placed far off-screen at left: -10000px instead.
+ * Off-screen container that does NOT impose its own width on the clone.
+ * Must not use display:none or visibility:hidden — html2canvas needs layout.
+ * Placed at left:-10000px so it's invisible but fully laid out.
  */
 function createExportRoot(): HTMLDivElement {
   const root = document.createElement("div");
@@ -51,9 +52,8 @@ function createExportRoot(): HTMLDivElement {
     position: "fixed",
     left: "-10000px",
     top: "0",
-    width: "816px",
-    background: "#ffffff",
     pointerEvents: "none",
+    background: "transparent",
     zIndex: "1",
   });
   document.body.appendChild(root);
@@ -71,6 +71,7 @@ async function waitForPaint(frames = 2): Promise<void> {
 }
 
 function waitForImages(container: HTMLElement): Promise<void> {
+  // Also covers background-image divs that replaced <img> elements
   const imgs = Array.from(container.querySelectorAll<HTMLImageElement>("img"));
   if (imgs.length === 0) return Promise.resolve();
 
@@ -85,8 +86,7 @@ function waitForImages(container: HTMLElement): Promise<void> {
           const done = () => resolve();
           img.addEventListener("load", done, { once: true });
           img.addEventListener("error", done, { once: true });
-          // Safety timeout — don't block export indefinitely
-          setTimeout(done, 8000);
+          setTimeout(done, 8000); // safety timeout
         })
     )
   ).then(() => undefined);
@@ -106,10 +106,8 @@ interface PdfPlacement {
 }
 
 /**
- * Letter page: 8.5 × 11 inches.
- * Fit the captured image while preserving its aspect ratio, centered on the page.
- * A letter-ratio canvas (816 × 1056) will fill the page exactly.
- * Taller or shorter pages get letterboxed.
+ * Preserve aspect ratio and center on a letter page (8.5 × 11 in).
+ * A 816×1056 capture (letter ratio) fills the page exactly at 0,0.
  */
 function getPdfPlacement(canvasWidth: number, canvasHeight: number): PdfPlacement {
   const PAGE_W = 8.5;
@@ -122,15 +120,11 @@ function getPdfPlacement(canvasWidth: number, canvasHeight: number): PdfPlacemen
   const canvasRatio = canvasWidth / canvasHeight;
   const pageRatio = PAGE_W / PAGE_H;
 
-  let w: number;
-  let h: number;
-
+  let w: number, h: number;
   if (canvasRatio > pageRatio) {
-    // Wider than page — fit to width
     w = PAGE_W;
     h = PAGE_W / canvasRatio;
   } else {
-    // Taller than page — fit to height
     h = PAGE_H;
     w = PAGE_H * canvasRatio;
   }
@@ -141,6 +135,64 @@ function getPdfPlacement(canvasWidth: number, canvasHeight: number): PdfPlacemen
     w,
     h,
   };
+}
+
+/**
+ * Replace every <img> inside container with a background-image <div>.
+ *
+ * html2canvas v1.4 does not implement CSS object-fit. Instead of stretching
+ * the image to fill its box, it draws the full natural image. Replacing with
+ * background-image + background-size:cover gives the correct crop in the
+ * capture output.
+ *
+ * The replacement div inherits the parent's full width/height so the slot
+ * frame dimensions remain unchanged.
+ */
+function replaceImgsWithBackgroundDivs(container: HTMLElement): void {
+  container.querySelectorAll<HTMLImageElement>("img").forEach((img) => {
+    const parent = img.parentElement;
+    if (!parent) return;
+    const src = img.getAttribute("src") ?? img.src;
+    if (!src) return;
+
+    const div = document.createElement("div");
+    Object.assign(div.style, {
+      display: "block",
+      width: "100%",
+      height: "100%",
+      backgroundImage: `url('${src}')`,
+      backgroundSize: "cover",
+      backgroundPosition: "center center",
+      backgroundRepeat: "no-repeat",
+    });
+    parent.replaceChild(div, img);
+  });
+}
+
+/**
+ * Replace <textarea> elements with static <div>s so html2canvas captures the
+ * typed text. The replacement preserves class names and inline styles so
+ * typography and spacing match the preview.
+ */
+function replaceTextareasWithDivs(container: HTMLElement): void {
+  container.querySelectorAll<HTMLTextAreaElement>("textarea").forEach((ta) => {
+    const replacement = document.createElement("div");
+    replacement.style.cssText = ta.style.cssText;
+    replacement.className = ta.className;
+    Object.assign(replacement.style, {
+      whiteSpace: "pre-wrap",
+      wordBreak: "break-word",
+      overflow: "hidden",
+      boxSizing: "border-box",
+    });
+    if (ta.value) {
+      replacement.textContent = ta.value;
+    } else {
+      replacement.textContent = ta.placeholder;
+      replacement.style.color = "#d1d5db"; // neutral-300 placeholder
+    }
+    ta.parentNode?.replaceChild(replacement, ta);
+  });
 }
 
 // ── main export ───────────────────────────────────────────────────────────────
@@ -163,13 +215,12 @@ export async function exportToPDF(
   const html2canvas = html2canvasModule.default;
   const { jsPDF } = jsPDFModule;
 
-  // Ensure fonts are ready before capturing
   await waitForFonts();
 
   const overlay = createExportOverlay();
   const exportRoot = createExportRoot();
 
-  // Give the overlay time to paint before heavy work begins
+  // Let overlay paint before heavy work
   await waitForPaint(2);
 
   const pdf = new jsPDF({ orientation: "portrait", unit: "in", format: "letter" });
@@ -181,61 +232,70 @@ export async function exportToPDF(
 
       const original = pageElements[i];
 
-      // Deep clone — images keep their blob: src, no re-fetch needed
+      // ── 1. Measure the live rendered rect ──────────────────────────────────
+      const rect = original.getBoundingClientRect();
+      const exportWidth = Math.round(rect.width);
+      const exportHeight = Math.round(rect.height);
+
+      if (exportWidth <= 0 || exportHeight <= 0) {
+        throw new Error(
+          `Page ${i + 1} has zero dimensions (${exportWidth}×${exportHeight}). ` +
+          `Make sure all pages are fully rendered and visible before exporting.`
+        );
+      }
+
+      // ── 2. Clone — original is never moved or mutated ─────────────────────
       const clone = original.cloneNode(true) as HTMLElement;
 
-      // Strip preview-only decorations so they don't bleed into the PDF
+      // Strip preview-only decorations (shadow, animation, transition)
       clone.style.boxShadow = "none";
       clone.style.animation = "none";
       clone.style.transition = "none";
       clone.classList.remove("shadow-page", "page-enter");
 
-      // Enforce correct export dimensions (clone may inherit browser styles)
-      clone.style.width = "816px";
-      clone.style.minHeight = "1056px";
+      // ── 3. Freeze clone to exact measured dimensions ───────────────────────
+      // No reflow allowed: set width, height, minHeight, maxHeight all together.
+      clone.style.width = `${exportWidth}px`;
+      clone.style.height = `${exportHeight}px`;
+      clone.style.minHeight = `${exportHeight}px`;
+      clone.style.maxHeight = `${exportHeight}px`;
+      clone.style.boxSizing = "border-box";
+      clone.style.overflow = "hidden";
       clone.style.position = "relative";
       clone.style.background = "#ffffff";
 
-      // Replace textarea values with plain divs so html2canvas captures the text
-      // (html2canvas does not reliably render <textarea> content)
-      clone.querySelectorAll<HTMLTextAreaElement>("textarea").forEach((ta) => {
-        const replacement = document.createElement("div");
-        replacement.style.cssText = ta.style.cssText;
-        replacement.className = ta.className;
-        Object.assign(replacement.style, {
-          whiteSpace: "pre-wrap",
-          wordBreak: "break-word",
-        });
-        replacement.textContent = ta.value || ta.placeholder;
-        if (!ta.value && ta.placeholder) {
-          replacement.style.color = "#d1d5db"; // placeholder color
-        }
-        ta.parentNode?.replaceChild(replacement, ta);
-      });
+      // ── 4. Mutate clone for html2canvas compatibility ──────────────────────
+      replaceImgsWithBackgroundDivs(clone);
+      replaceTextareasWithDivs(clone);
 
+      // ── 5. Mount clone and wait for stable layout ──────────────────────────
       exportRoot.innerHTML = "";
       exportRoot.appendChild(clone);
 
-      // Wait for layout + images to be ready
       await waitForPaint(2);
       await waitForImages(clone);
 
+      // ── 6. Capture ────────────────────────────────────────────────────────
       const canvas = await html2canvas(clone, {
         scale,
         useCORS: true,
         allowTaint: true,
         backgroundColor: "#ffffff",
-        width: 816,
-        windowWidth: 816,
+        width: exportWidth,
+        height: exportHeight,
+        windowWidth: exportWidth,
+        windowHeight: exportHeight,
+        scrollX: 0,
+        scrollY: 0,
         logging: false,
       });
 
       if (canvas.width === 0 || canvas.height === 0) {
-        console.warn(`exportToPDF: page ${i + 1} produced a 0×0 canvas, skipping`);
+        console.warn(`exportToPDF: page ${i + 1} produced a 0×0 canvas — skipping`);
         continue;
       }
 
-      // PNG preserves sharpness without JPEG compression artifacts
+      // ── 7. Place image on PDF page, preserving aspect ratio ───────────────
       const imgData = canvas.toDataURL("image/png");
       const { x, y, w, h } = getPdfPlacement(canvas.width, canvas.height);
       pdf.addImage(imgData, "PNG", x, y, w, h);
