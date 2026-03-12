@@ -20,13 +20,17 @@ export async function POST(req: NextRequest) {
     }
 
     const payload = {
+      sheet: "Leads",
       email: emailTrimmed,
       use_case: useCaseTrimmed,
       source: "export_modal",
       created_at: new Date().toISOString(),
     };
 
-    await fetch(scriptUrl, {
+    const url = new URL(scriptUrl);
+    url.searchParams.set("sheet", "Leads");
+
+    await fetch(url.toString(), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
