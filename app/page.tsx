@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { DocumentCanvas } from "@/components/DocumentCanvas";
 import { FeedbackTrigger } from "@/components/FeedbackTrigger";
+import { ExportLeadModal } from "@/components/ExportLeadModal";
 import { extractAllPhotos, revokePhotoUrls } from "@/lib/metadata";
 import { buildDocument } from "@/lib/layout";
 import { exportToPDF } from "@/lib/pdf";
@@ -31,6 +32,7 @@ export default function Home() {
   const [doc, setDoc] = useState<TimelineDocument | null>(null);
   const [allPhotos, setAllPhotos] = useState<Photo[]>([]);
   const [processing, setProcessing] = useState<ProcessingState>({ status: "idle" });
+  const [exportModalOpen, setExportModalOpen] = useState(false);
 
   // Hidden file input — triggered by navbar Upload button
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -118,6 +120,22 @@ export default function Home() {
     }
   }, []);
 
+  const handleExportWithLead = useCallback(
+    (email: string, useCase: string) => {
+      setExportModalOpen(false);
+      // Fire-and-forget lead submission — never blocks the download
+      if (email || useCase) {
+        fetch("/api/lead", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, use_case: useCase }),
+        }).catch(() => {});
+      }
+      handleExport();
+    },
+    [handleExport]
+  );
+
   const handleReset = useCallback(() => {
     revokePhotoUrls(allPhotos);
     setAllPhotos([]);
@@ -142,9 +160,15 @@ export default function Home() {
 
       <Navbar
         onUploadClick={() => fileInputRef.current?.click()}
-        onExportClick={handleExport}
+        onExportClick={() => setExportModalOpen(true)}
         hasDocument={!!doc && !isProcessing}
         isExporting={isExporting}
+      />
+
+      <ExportLeadModal
+        open={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        onDownload={handleExportWithLead}
       />
 
       {/* Main content — occupies remaining height below navbar */}
