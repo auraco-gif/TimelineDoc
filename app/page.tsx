@@ -3,6 +3,8 @@
 import { useCallback, useRef, useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { DocumentCanvas } from "@/components/DocumentCanvas";
+import { FeedbackTrigger } from "@/components/FeedbackTrigger";
+import { ExportLeadModal } from "@/components/ExportLeadModal";
 import { extractAllPhotos, revokePhotoUrls } from "@/lib/metadata";
 import { buildDocument } from "@/lib/layout";
 import { exportToPDF } from "@/lib/pdf";
@@ -30,6 +32,7 @@ export default function Home() {
   const [doc, setDoc] = useState<TimelineDocument | null>(null);
   const [allPhotos, setAllPhotos] = useState<Photo[]>([]);
   const [processing, setProcessing] = useState<ProcessingState>({ status: "idle" });
+  const [exportModalOpen, setExportModalOpen] = useState(false);
 
   // Hidden file input — triggered by navbar Upload button
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -117,6 +120,26 @@ export default function Home() {
     }
   }, []);
 
+  const handleExportWithLead = useCallback(
+    (email: string, useCase: string) => {
+      setExportModalOpen(false);
+      // Fire-and-forget lead submission — never blocks the download
+      if (email || useCase) {
+        console.log("[lead] submit start", { email, useCase });
+        fetch("/api/lead", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, use_case: useCase }),
+        })
+          .then((r) => r.json())
+          .then((result) => console.log("[lead] submit response", result))
+          .catch((err) => console.warn("[lead] submit fetch error", err));
+      }
+      handleExport();
+    },
+    [handleExport]
+  );
+
   const handleReset = useCallback(() => {
     revokePhotoUrls(allPhotos);
     setAllPhotos([]);
@@ -141,9 +164,15 @@ export default function Home() {
 
       <Navbar
         onUploadClick={() => fileInputRef.current?.click()}
-        onExportClick={handleExport}
+        onExportClick={() => setExportModalOpen(true)}
         hasDocument={!!doc && !isProcessing}
         isExporting={isExporting}
+      />
+
+      <ExportLeadModal
+        open={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        onDownload={handleExportWithLead}
       />
 
       {/* Main content — occupies remaining height below navbar */}
@@ -185,6 +214,8 @@ export default function Home() {
             {doc.sections.reduce((sum, s) => sum + s.pages.length, 0) !== 1 ? "s" : ""}
           </span>
           <span className="flex-1" />
+          <FeedbackTrigger className="text-[11px] text-neutral-400" />
+          <span className="text-neutral-200">·</span>
           <button
             onClick={handleReset}
             className="text-[11px] text-neutral-400 hover:text-red-500 transition-colors"

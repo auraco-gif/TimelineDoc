@@ -5,6 +5,7 @@ import { getAllPages, updateSectionDescription } from "@/lib/layout";
 import { DocumentPage } from "@/components/DocumentPage";
 import { UploadZone } from "@/components/UploadZone";
 import { Spinner } from "@/components/ui/Spinner";
+import { FeedbackTrigger } from "@/components/FeedbackTrigger";
 
 interface DocumentCanvasProps {
   document: TimelineDocument | null;
@@ -77,26 +78,40 @@ export function DocumentCanvas({
 
         {/* Empty state */}
         {!isProcessing && !document && (
-          <div className="flex flex-col items-center justify-center gap-10 py-16 w-full max-w-2xl">
+          <div className="flex flex-col items-center gap-8 py-16 w-full max-w-lg">
+
+            {/* Hero */}
             <div className="text-center space-y-2.5">
               <h1 className="text-2xl font-semibold text-neutral-800 tracking-tight">
-                Build your timeline document
+                Turn your photos into a clean timeline PDF
               </h1>
-              <p className="text-sm text-neutral-400 max-w-[300px] mx-auto leading-relaxed">
-                Upload photos and we&apos;ll sort them by date and generate a
-                clean, printable PDF — ready for visa or immigration submission.
+              <p className="text-sm text-neutral-400 max-w-[340px] mx-auto leading-relaxed">
+                Upload photos, auto-sort them by date, and generate a printable
+                PDF for visa, immigration, or relationship evidence.
               </p>
             </div>
+
+            {/* Upload zone */}
             <UploadZone onFiles={onFilesSelected} isProcessing={false} />
-            <div className="flex items-center gap-5 text-[11px] text-neutral-300">
-              <span>JPG · PNG</span>
-              <span>·</span>
-              <span>EXIF date extraction</span>
-              <span>·</span>
-              <span>50–200 photos</span>
-              <span>·</span>
-              <span>Letter size PDF</span>
-            </div>
+
+            {/* Privacy line */}
+            <p className="text-[11px] text-neutral-400 leading-relaxed text-center max-w-[320px]">
+              Private by default — your photos are used only to generate your
+              PDF and are not publicly shared.
+            </p>
+
+            {/* Footer */}
+            <footer className="flex items-center gap-4 text-[11px] text-neutral-400 pt-2">
+              <FeedbackTrigger className="text-[11px] text-neutral-400" />
+              <span className="text-neutral-200">·</span>
+              <a
+                href="mailto:auraco.helpdesk@gmail.com"
+                className="hover:text-neutral-600 transition-colors underline underline-offset-2"
+              >
+                Contact
+              </a>
+            </footer>
+
           </div>
         )}
 
