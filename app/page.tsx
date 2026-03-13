@@ -125,11 +125,15 @@ export default function Home() {
       setExportModalOpen(false);
       // Fire-and-forget lead submission — never blocks the download
       if (email || useCase) {
+        console.log("[lead] submit start", { email, useCase });
         fetch("/api/lead", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, use_case: useCase }),
-        }).catch(() => {});
+        })
+          .then((r) => r.json())
+          .then((result) => console.log("[lead] submit response", result))
+          .catch((err) => console.warn("[lead] submit fetch error", err));
       }
       handleExport();
     },
