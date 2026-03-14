@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
@@ -23,8 +24,24 @@ export function FeedbackModal({ open, onClose }: FeedbackModalProps) {
   const [emailError, setEmailError] = useState("");
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
 
+  const [mounted, setMounted] = useState(false);
   const firstInputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+
+  // Mount guard — avoids SSR mismatch when using createPortal
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Body scroll lock while modal is open
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
 
   // Focus first input when modal opens
   useEffect(() => {
@@ -114,11 +131,11 @@ export function FeedbackModal({ open, onClose }: FeedbackModalProps) {
     }
   };
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
+  const modalContent = (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      className="fixed inset-0 z-[9999] flex items-start justify-center overflow-y-auto p-4 sm:p-6"
       role="dialog"
       aria-modal="true"
       aria-labelledby="feedback-title"
@@ -133,20 +150,23 @@ export function FeedbackModal({ open, onClose }: FeedbackModalProps) {
       {/* Panel */}
       <div
         ref={panelRef}
-        className="relative bg-white rounded-2xl shadow-page w-full max-w-md px-8 py-8 flex flex-col gap-6"
+        className="relative my-6 bg-white rounded-2xl shadow-page w-full max-w-md max-h-[calc(100dvh-3rem)] flex flex-col overflow-hidden"
       >
-        {/* Close button */}
+        {/* Close button — stays pinned above scrollable content */}
         <button
           onClick={handleClose}
           aria-label="Close"
           className={cn(
-            "absolute top-5 right-5 p-0.5 rounded-md",
+            "absolute top-5 right-5 z-10 p-0.5 rounded-md",
             "text-neutral-400 hover:text-neutral-700 transition-colors duration-150",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400"
           )}
         >
           <X className="h-4 w-4" />
         </button>
+
+        {/* Scrollable content area */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-8 py-8 pb-10 flex flex-col gap-6">
 
         {submitState === "success" ? (
           /* ── Success state ─────────────────────────────────────────────── */
@@ -296,7 +316,10 @@ export function FeedbackModal({ open, onClose }: FeedbackModalProps) {
             </form>
           </>
         )}
+        </div>{/* end scrollable content */}
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }

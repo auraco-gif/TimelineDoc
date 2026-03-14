@@ -15,7 +15,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface ExportOptions {
-  filename?: string;
   scale?: number;
   onProgress?: (current: number, total: number) => void;
 }
@@ -252,17 +251,20 @@ function replaceTextareasWithDivs(container: HTMLElement): void {
   });
 }
 
-// ── main export ───────────────────────────────────────────────────────────────
+// ── main exports ──────────────────────────────────────────────────────────────
 
-export async function exportToPDF(
+/**
+ * Build a PDF from page elements and return it as a Blob.
+ * Does NOT trigger a browser download — call triggerPDFDownload() separately.
+ */
+export async function buildPDFBlob(
   pageElements: HTMLElement[],
   options: ExportOptions = {}
-): Promise<void> {
-  const { filename = "timeline-evidence.pdf", scale = 2, onProgress } = options;
+): Promise<Blob> {
+  const { scale = 2, onProgress } = options;
 
   if (pageElements.length === 0) {
-    console.warn("exportToPDF: no page elements provided");
-    return;
+    throw new Error("buildPDFBlob: no page elements provided");
   }
 
   const [html2canvasModule, jsPDFModule] = await Promise.all([
@@ -290,16 +292,12 @@ export async function exportToPDF(
       const original = pageElements[i];
 
       // ── 1. Read preferred size from the live element ───────────────────────
-      // The original may be detached (0×0 getBCR) if React unmounted pages
-      // while isProcessing=true. getPreferredPageSize never throws — it falls
-      // back through computed style, offset, and finally canonical 816×1056.
       const originalRect = original.getBoundingClientRect();
       const preferred = getPreferredPageSize(original);
 
       // ── 2. Clone — original is never moved or mutated ─────────────────────
       const clone = original.cloneNode(true) as HTMLElement;
 
-      // Strip preview-only decorations (shadow, animation, transition)
       clone.style.boxShadow = "none";
       clone.style.animation = "none";
       clone.style.transition = "none";
@@ -332,7 +330,6 @@ export async function exportToPDF(
       await waitForFonts();
 
       // ── 6. Measure the MOUNTED clone (authoritative dimensions) ────────────
-      // The clone is now in the DOM with explicit styles; its rect is reliable.
       const measured = getMeasuredExportSize(clone);
       const exportWidth = measured.width;
       const exportHeight = measured.height;
@@ -361,7 +358,7 @@ export async function exportToPDF(
       });
 
       if (canvas.width === 0 || canvas.height === 0) {
-        console.warn(`exportToPDF: page ${i + 1} produced a 0×0 canvas — skipping`);
+        console.warn(`buildPDFBlob: page ${i + 1} produced a 0×0 canvas — skipping`);
         continue;
       }
 
@@ -371,9 +368,24 @@ export async function exportToPDF(
       pdf.addImage(imgData, "PNG", x, y, w, h);
     }
 
-    pdf.save(filename);
+    return pdf.output("blob");
   } finally {
     exportRoot.remove();
     overlay.remove();
   }
+}
+
+/**
+ * Trigger a browser save dialog for a previously generated PDF Blob.
+ * Creates and immediately revokes an object URL to avoid memory leaks.
+ */
+export function triggerPDFDownload(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
