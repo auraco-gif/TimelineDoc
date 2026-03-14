@@ -5,9 +5,11 @@ import { Navbar } from "@/components/Navbar";
 import { DocumentCanvas } from "@/components/DocumentCanvas";
 import { FeedbackTrigger } from "@/components/FeedbackTrigger";
 import { ExportLeadModal } from "@/components/ExportLeadModal";
+import { ExportSuccessModal } from "@/components/ExportSuccessModal";
+import { SupportButton } from "@/components/SupportButton";
 import { extractAllPhotos, revokePhotoUrls } from "@/lib/metadata";
 import { buildDocument } from "@/lib/layout";
-import { exportToPDF } from "@/lib/pdf";
+import { buildPDFBlob } from "@/lib/pdf";
 import type { TimelineDocument } from "@/types/document";
 import type { Photo } from "@/types/document";
 
@@ -32,7 +34,12 @@ export default function Home() {
   const [doc, setDoc] = useState<TimelineDocument | null>(null);
   const [allPhotos, setAllPhotos] = useState<Photo[]>([]);
   const [processing, setProcessing] = useState<ProcessingState>({ status: "idle" });
-  const [exportModalOpen, setExportModalOpen] = useState(false);
+
+  // Export flow state
+  const [exportLeadOpen, setExportLeadOpen] = useState(false);
+  const [exportSuccessOpen, setExportSuccessOpen] = useState(false);
+  const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
+  const PDF_FILENAME = "timeline-evidence.pdf";
 
   // Hidden file input — triggered by navbar Upload button
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -90,8 +97,25 @@ export default function Home() {
     [allPhotos]
   );
 
-  const handleExport = useCallback(async () => {
-    // Wait for React layout to settle before querying the DOM
+  // Step 1: user clicks "Generate PDF" in ExportLeadModal
+  const handleGenerate = useCallback(async (email: string, useCase: string) => {
+    // Close lead modal immediately
+    setExportLeadOpen(false);
+
+    // Fire-and-forget lead submission — never blocks the download
+    if (email || useCase) {
+      console.log("[lead] submit start", { email, useCase });
+      fetch("/api/lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, use_case: useCase }),
+      })
+        .then((r) => r.json())
+        .then((result) => console.log("[lead] submit response", result))
+        .catch((err) => console.warn("[lead] submit fetch error", err));
+    }
+
+    // Wait for React to settle, then query the live page elements
     await waitForPaint(2);
 
     const pageElements = Array.from(
@@ -99,46 +123,34 @@ export default function Home() {
     );
 
     if (pageElements.length === 0) {
-      console.warn("PDF export: no [data-export-page] elements found in the document.");
+      console.warn("PDF export: no [data-export-page] elements found.");
       return;
     }
 
     setProcessing({ status: "exporting", progress: 0, total: pageElements.length });
 
     try {
-      await exportToPDF(pageElements, {
-        filename: "timeline-evidence.pdf",
+      const blob = await buildPDFBlob(pageElements, {
         scale: 2,
         onProgress: (current, total) => {
           setProcessing({ status: "exporting", progress: current, total });
         },
       });
+      // Store blob and open success modal — download triggered by user click
+      setPdfBlob(blob);
+      setExportSuccessOpen(true);
     } catch (err) {
-      console.error("PDF export failed:", err);
+      console.error("PDF generation failed:", err);
     } finally {
       setProcessing({ status: "idle" });
     }
   }, []);
 
-  const handleExportWithLead = useCallback(
-    (email: string, useCase: string) => {
-      setExportModalOpen(false);
-      // Fire-and-forget lead submission — never blocks the download
-      if (email || useCase) {
-        console.log("[lead] submit start", { email, useCase });
-        fetch("/api/lead", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, use_case: useCase }),
-        })
-          .then((r) => r.json())
-          .then((result) => console.log("[lead] submit response", result))
-          .catch((err) => console.warn("[lead] submit fetch error", err));
-      }
-      handleExport();
-    },
-    [handleExport]
-  );
+  // Step 3: user closes success modal — clean up blob
+  const handleSuccessClose = useCallback(() => {
+    setExportSuccessOpen(false);
+    setPdfBlob(null);
+  }, []);
 
   const handleReset = useCallback(() => {
     revokePhotoUrls(allPhotos);
@@ -164,15 +176,22 @@ export default function Home() {
 
       <Navbar
         onUploadClick={() => fileInputRef.current?.click()}
-        onExportClick={() => setExportModalOpen(true)}
+        onExportClick={() => setExportLeadOpen(true)}
         hasDocument={!!doc && !isProcessing}
         isExporting={isExporting}
       />
 
       <ExportLeadModal
-        open={exportModalOpen}
-        onClose={() => setExportModalOpen(false)}
-        onDownload={handleExportWithLead}
+        open={exportLeadOpen}
+        onClose={() => setExportLeadOpen(false)}
+        onGenerate={handleGenerate}
+      />
+
+      <ExportSuccessModal
+        open={exportSuccessOpen}
+        blob={pdfBlob}
+        filename={PDF_FILENAME}
+        onClose={handleSuccessClose}
       />
 
       {/* Main content — occupies remaining height below navbar */}
@@ -197,6 +216,8 @@ export default function Home() {
         {/* Future: right panel slot */}
         {/* <RightPanel /> */}
       </main>
+
+      <SupportButton />
 
       {/* Status bar */}
       {doc && !isProcessing && (

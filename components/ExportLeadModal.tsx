@@ -16,10 +16,10 @@ const USE_CASE_OPTIONS = [
 interface ExportLeadModalProps {
   open: boolean;
   onClose: () => void;
-  onDownload: (email: string, useCase: string) => void;
+  onGenerate: (email: string, useCase: string) => void;
 }
 
-export function ExportLeadModal({ open, onClose, onDownload }: ExportLeadModalProps) {
+export function ExportLeadModal({ open, onClose, onGenerate }: ExportLeadModalProps) {
   const [email, setEmail] = useState("");
   const [useCase, setUseCase] = useState("");
   const [emailError, setEmailError] = useState("");
@@ -81,14 +81,14 @@ export function ExportLeadModal({ open, onClose, onDownload }: ExportLeadModalPr
     onClose();
   };
 
-  const handleDownload = () => {
+  const handleGenerate = () => {
     const emailTrimmed = email.trim();
     if (emailTrimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
       setEmailError("Please enter a valid email address.");
       return;
     }
     setEmailError("");
-    onDownload(emailTrimmed, useCase);
+    onGenerate(emailTrimmed, useCase);
   };
 
   if (!open) return null;
@@ -216,9 +216,12 @@ export function ExportLeadModal({ open, onClose, onDownload }: ExportLeadModalPr
           </div>
 
           {/* Helper */}
-          <p className="text-xs text-neutral-400 leading-relaxed -mt-1">
-            Your PDF will still download even if you skip this step.
-          </p>
+          <div className="flex items-center justify-between -mt-1">
+            <p className="text-xs text-neutral-400 leading-relaxed">
+              Your PDF will still download even if you skip this step.
+            </p>
+            <span className="text-xs text-neutral-300 shrink-0 ml-3">Free during MVP</span>
+          </div>
         </div>
 
         {/* Actions */}
@@ -226,8 +229,8 @@ export function ExportLeadModal({ open, onClose, onDownload }: ExportLeadModalPr
           <Button variant="secondary" size="md" onClick={handleClose}>
             Cancel
           </Button>
-          <Button variant="primary" size="md" onClick={handleDownload}>
-            Download PDF
+          <Button variant="primary" size="md" onClick={handleGenerate}>
+            Generate PDF
           </Button>
         </div>
       </div>
