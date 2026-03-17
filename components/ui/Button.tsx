@@ -3,20 +3,27 @@ import { cn } from "@/lib/utils";
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "ghost" | "outline";
+  variant?: "primary" | "secondary" | "ghost" | "outline" | "success";
   size?: "sm" | "md" | "lg";
   loading?: boolean;
 }
 
 const variantClasses: Record<NonNullable<ButtonProps["variant"]>, string> = {
+  // Upload Photos — warm terracotta
   primary:
-    "bg-neutral-900 text-white hover:bg-neutral-700 shadow-sm",
+    "bg-terracotta-500 text-white hover:bg-terracotta-600 shadow-sm",
+  // Export PDF — sage green
+  success:
+    "bg-sage-600 text-white hover:bg-sage-700 shadow-sm",
+  // Secondary surface button
   secondary:
-    "bg-white text-neutral-800 border border-neutral-200 hover:bg-neutral-50 shadow-sm",
+    "bg-warm-25 text-warm-900 border border-warm-200 hover:bg-warm-100 shadow-sm",
+  // Ghost — light interaction
   ghost:
-    "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900",
+    "text-warm-600 hover:bg-warm-100 hover:text-warm-900",
+  // Outline — bordered, no fill
   outline:
-    "border border-neutral-200 text-neutral-700 hover:bg-neutral-50",
+    "border border-warm-200 text-warm-600 hover:bg-warm-100",
 };
 
 const sizeClasses: Record<NonNullable<ButtonProps["size"]>, string> = {
@@ -44,7 +51,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled || loading}
         className={cn(
           "inline-flex items-center justify-center font-medium rounded-md transition-colors duration-150",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:ring-offset-1",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warm-200 focus-visible:ring-offset-1",
           "disabled:pointer-events-none disabled:opacity-40",
           variantClasses[variant],
           sizeClasses[size],

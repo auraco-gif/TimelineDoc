@@ -55,25 +55,25 @@ export function UploadZone({ onFiles, isProcessing = false }: UploadZoneProps) {
         "border-2 border-dashed rounded-2xl px-10 py-16 cursor-pointer select-none",
         "transition-all duration-200",
         isDragging
-          ? "border-neutral-400 bg-neutral-50"
-          : "border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50",
+          ? "border-warm-300 bg-terracotta-100"
+          : "border-warm-200 bg-warm-25 hover:border-warm-300 hover:bg-warm-100",
         isProcessing && "pointer-events-none opacity-60"
       )}
     >
       <div
         className={cn(
           "w-14 h-14 rounded-2xl flex items-center justify-center",
-          isDragging ? "bg-neutral-200" : "bg-neutral-100"
+          isDragging ? "bg-warm-200" : "bg-warm-100"
         )}
       >
-        <ImagePlus className="h-6 w-6 text-neutral-500" strokeWidth={1.5} />
+        <ImagePlus className="h-6 w-6 text-warm-500" strokeWidth={1.5} />
       </div>
 
       <div className="text-center space-y-1">
-        <p className="text-sm font-medium text-neutral-800">
+        <p className="text-sm font-medium text-warm-900">
           {isDragging ? "Drop photos here" : "Upload photos"}
         </p>
-        <p className="text-xs text-neutral-400">
+        <p className="text-xs text-warm-500">
           Drag &amp; drop or click to browse · JPG, PNG supported
         </p>
       </div>

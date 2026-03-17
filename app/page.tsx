@@ -221,25 +221,25 @@ export default function Home() {
 
       {/* Status bar */}
       {doc && !isProcessing && (
-        <div className="h-7 border-t border-neutral-200 bg-white/80 backdrop-blur-sm flex items-center px-5 gap-4 shrink-0">
-          <span className="text-[11px] text-neutral-400 tabular-nums">
+        <div className="h-7 border-t border-warm-200 bg-warm-25/80 backdrop-blur-sm flex items-center px-5 gap-4 shrink-0">
+          <span className="text-[11px] text-warm-500 tabular-nums">
             {allPhotos.length} photo{allPhotos.length !== 1 ? "s" : ""}
           </span>
-          <span className="text-neutral-200">·</span>
-          <span className="text-[11px] text-neutral-400 tabular-nums">
+          <span className="text-warm-200">·</span>
+          <span className="text-[11px] text-warm-500 tabular-nums">
             {doc.sections.length} date{doc.sections.length !== 1 ? "s" : ""}
           </span>
-          <span className="text-neutral-200">·</span>
-          <span className="text-[11px] text-neutral-400 tabular-nums">
+          <span className="text-warm-200">·</span>
+          <span className="text-[11px] text-warm-500 tabular-nums">
             {doc.sections.reduce((sum, s) => sum + s.pages.length, 0)} page
             {doc.sections.reduce((sum, s) => sum + s.pages.length, 0) !== 1 ? "s" : ""}
           </span>
           <span className="flex-1" />
-          <FeedbackTrigger className="text-[11px] text-neutral-400" />
-          <span className="text-neutral-200">·</span>
+          <FeedbackTrigger className="text-[11px] text-warm-500" />
+          <span className="text-warm-200">·</span>
           <button
             onClick={handleReset}
-            className="text-[11px] text-neutral-400 hover:text-red-500 transition-colors"
+            className="text-[11px] text-warm-500 hover:text-red-500 transition-colors"
           >
             Clear document
           </button>
