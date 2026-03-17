@@ -12,9 +12,9 @@ const variantClasses: Record<NonNullable<ButtonProps["variant"]>, string> = {
   // Upload Photos — warm terracotta
   primary:
     "bg-terracotta-500 text-white hover:bg-terracotta-600 shadow-sm",
-  // Export PDF — sage green
+  // Alias — kept for backward compat, maps to primary
   success:
-    "bg-sage-600 text-white hover:bg-sage-700 shadow-sm",
+    "bg-terracotta-500 text-white hover:bg-terracotta-600 shadow-sm",
   // Secondary surface button
   secondary:
     "bg-warm-25 text-warm-900 border border-warm-200 hover:bg-warm-100 shadow-sm",
