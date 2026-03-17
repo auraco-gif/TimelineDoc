@@ -1,8 +1,8 @@
-# TimelineDoc
+# TimelineDoc.app — Photo Timeline PDF Generator
 
-A client-side web application that converts a batch of photos into a clean, timeline-based PDF document — designed for visa and immigration evidence packages.
+Turn your photos into a clean, chronological timeline PDF — perfect for immigration, visa, or relationship evidence.
 
-Upload 50–200 photos, let the app sort them by date automatically, preview the generated pages in a document canvas, and export a letter-size PDF ready for printing or submission.
+Upload your photos, automatically sort them by date, and export a structured, printable PDF in seconds.
 
 ---
 

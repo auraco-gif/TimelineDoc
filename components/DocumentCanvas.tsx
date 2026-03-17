@@ -83,6 +83,8 @@ export function DocumentCanvas({
             {/* Hero */}
             <div className="text-center space-y-2.5">
               <h1 className="text-2xl font-semibold text-warm-900 tracking-tight">
+                <span className="text-terracotta-500">TimelineDoc</span>
+                {" "}—{" "}
                 Turn your photos into a clean timeline PDF
               </h1>
               <p className="text-sm text-warm-600 max-w-[340px] mx-auto leading-relaxed">
