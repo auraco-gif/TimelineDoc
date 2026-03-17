@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { Upload, FileDown, Share2, Users, LayoutTemplate, ChevronDown } from "lucide-react";
+import { Upload, FileDown, Share2, Users, LayoutTemplate, ChevronDown, LayoutList } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 interface NavbarProps {
@@ -13,7 +13,7 @@ interface NavbarProps {
 }
 
 const EXAMPLE_LINKS = [
-  { label: "Relationship Evidence Example", href: "/example/relationship-evidence" },
+  { label: "Relationship Evidence", href: "/example/relationship-evidence" },
 ];
 
 export function Navbar({
@@ -88,19 +88,15 @@ export function Navbar({
 
       {/* Secondary nav (right group) */}
       <div className="flex items-center gap-1">
-        {/* Examples dropdown */}
-        <div
-          ref={examplesRef}
-          className="relative"
-          onMouseEnter={() => setExamplesOpen(true)}
-          onMouseLeave={() => setExamplesOpen(false)}
-        >
+        {/* Examples dropdown — click-only, no hover */}
+        <div ref={examplesRef} className="relative">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setExamplesOpen((v) => !v)}
             className="text-warm-500 gap-1"
           >
+            <LayoutList className="h-3.5 w-3.5" />
             Examples
             <ChevronDown
               className={`h-3 w-3 transition-transform duration-150 ${examplesOpen ? "rotate-180" : ""}`}
@@ -108,13 +104,16 @@ export function Navbar({
           </Button>
 
           {examplesOpen && (
-            <div className="absolute right-0 top-full mt-1 w-60 bg-[#FFFDFC] border border-warm-200 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.08)] py-1.5 z-50">
+            <div
+              className="absolute left-0 top-[calc(100%+8px)] w-56 bg-[#FFFDFC] border border-warm-200 rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.08)] py-1.5"
+              style={{ zIndex: 200, pointerEvents: "auto" }}
+            >
               {EXAMPLE_LINKS.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={() => setExamplesOpen(false)}
-                  className="block px-4 py-2.5 text-sm text-warm-700 hover:text-warm-900 hover:bg-warm-100 transition-colors"
+                  className="block px-4 py-2.5 text-sm text-warm-700 hover:text-warm-900 hover:bg-warm-100 transition-colors cursor-pointer"
                 >
                   {item.label}
                 </Link>
