@@ -195,7 +195,7 @@ export default function Home() {
       />
 
       {/* Main content — occupies remaining height below navbar */}
-      <main className="flex flex-col pt-14 h-full overflow-hidden">
+      <main className="flex flex-col pt-[76px] h-full overflow-hidden">
         {/* Future: left panel slot */}
         {/* <LeftPanel /> */}
 
