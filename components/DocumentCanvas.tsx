@@ -51,20 +51,20 @@ export function DocumentCanvas({
 
   return (
     // overflow-auto supports both vertical scroll and horizontal scroll on narrow screens
-    <div className="flex-1 bg-[#f0f0ef] overflow-auto">
+    <div className="flex-1 bg-warm-50 overflow-auto">
       <div className="flex flex-col items-center py-12 px-6 gap-8 min-h-full">
 
         {/* Processing state */}
         {isProcessing && (
           <div className="flex flex-col items-center gap-4 py-20 w-full max-w-sm">
             <Spinner size="lg" />
-            <p className="text-sm text-neutral-500">
+            <p className="text-sm text-warm-600">
               {processingLabel ?? "Processing photos…"}
             </p>
             {processingProgress && processingProgress.total > 0 && (
-              <div className="w-full bg-neutral-200 rounded-full h-1 overflow-hidden">
+              <div className="w-full bg-warm-200 rounded-full h-1 overflow-hidden">
                 <div
-                  className="bg-neutral-700 h-1 rounded-full transition-all duration-300"
+                  className="bg-terracotta-500 h-1 rounded-full transition-all duration-300"
                   style={{
                     width: `${Math.round(
                       (processingProgress.current / processingProgress.total) * 100
@@ -82,10 +82,12 @@ export function DocumentCanvas({
 
             {/* Hero */}
             <div className="text-center space-y-2.5">
-              <h1 className="text-2xl font-semibold text-neutral-800 tracking-tight">
+              <h1 className="text-2xl font-semibold text-warm-900 tracking-tight">
+                <span className="text-terracotta-500">TimelineDoc</span>
+                {" "}—{" "}
                 Turn your photos into a clean timeline PDF
               </h1>
-              <p className="text-sm text-neutral-400 max-w-[340px] mx-auto leading-relaxed">
+              <p className="text-sm text-warm-600 max-w-[340px] mx-auto leading-relaxed">
                 Upload photos, auto-sort them by date, and generate a printable
                 PDF for visa, immigration, or relationship evidence.
               </p>
@@ -95,18 +97,18 @@ export function DocumentCanvas({
             <UploadZone onFiles={onFilesSelected} isProcessing={false} />
 
             {/* Privacy line */}
-            <p className="text-[11px] text-neutral-400 leading-relaxed text-center max-w-[320px]">
+            <p className="text-[11px] text-warm-500 leading-relaxed text-center max-w-[320px]">
               Private by default — your photos are used only to generate your
               PDF and are not publicly shared.
             </p>
 
             {/* Footer */}
-            <footer className="flex items-center gap-4 text-[11px] text-neutral-400 pt-2">
-              <FeedbackTrigger className="text-[11px] text-neutral-400" />
-              <span className="text-neutral-200">·</span>
+            <footer className="flex items-center gap-4 text-[11px] text-warm-500 pt-2">
+              <FeedbackTrigger className="text-[11px] text-warm-500" />
+              <span className="text-warm-200">·</span>
               <a
                 href="mailto:auraco.helpdesk@gmail.com"
-                className="hover:text-neutral-600 transition-colors underline underline-offset-2"
+                className="hover:text-warm-900 transition-colors underline underline-offset-2"
               >
                 Contact
               </a>
@@ -135,7 +137,7 @@ export function DocumentCanvas({
           <div className="pb-6">
             <button
               onClick={handleAddMore}
-              className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors underline underline-offset-2"
+              className="text-xs text-warm-500 hover:text-warm-900 transition-colors underline underline-offset-2"
             >
               + Add more photos
             </button>

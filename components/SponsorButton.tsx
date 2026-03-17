@@ -5,7 +5,7 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SUPPORT_LINKS, SUPPORT_TIERS } from "@/lib/config";
 
-export function SupportButton() {
+export function SponsorButton() {
   const [open, setOpen] = useState(false);
 
   return (
@@ -13,26 +13,26 @@ export function SupportButton() {
       {/* Floating pill button */}
       <button
         onClick={() => setOpen(true)}
-        aria-label="Support TimelineDoc"
+        aria-label="Sponsor TimelineDoc"
         className={cn(
           "fixed bottom-6 right-6 z-40",
-          "px-4 py-2 rounded-full text-sm font-semibold",
+          "px-4 py-2 rounded-full text-sm font-semibold text-white",
+          "bg-terracotta-500 hover:bg-terracotta-600",
           "shadow-md hover:shadow-lg active:scale-95",
           "transition-all duration-150",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#FFB800]"
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-terracotta-500"
         )}
-        style={{ backgroundColor: "#FFB800", color: "#1a1000" }}
       >
-        Support
+        Sponsor
       </button>
 
-      {/* Support modal */}
+      {/* Sponsor modal */}
       {open && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center p-4"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="support-modal-title"
+          aria-labelledby="sponsor-modal-title"
         >
           {/* Backdrop */}
           <div
@@ -57,10 +57,10 @@ export function SupportButton() {
 
             <div>
               <p
-                id="support-modal-title"
+                id="sponsor-modal-title"
                 className="text-base font-semibold text-neutral-900 mb-1"
               >
-                Support TimelineDoc
+                Sponsor TimelineDoc
               </p>
               <p className="text-sm text-neutral-500 leading-relaxed">
                 TimelineDoc is free during MVP. If it helped you, any support

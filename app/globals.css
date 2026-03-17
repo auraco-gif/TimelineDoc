@@ -5,8 +5,8 @@
 @tailwind utilities;
 
 :root {
-  --foreground: #0a0a0a;
-  --background: #ffffff;
+  --foreground: #1F1A17;
+  --background: #F7F3EE;
 }
 
 * {
@@ -18,14 +18,14 @@ body {
   height: 100%;
   margin: 0;
   padding: 0;
-  background: #f0f0ef;
+  background: #F7F3EE;
   color: var(--foreground);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Subtle scrollbar */
+/* Subtle warm scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -33,14 +33,14 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d1d1d1;
+  background: #D4C9BC;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #b0b0b0;
+  background: #B8AA9C;
 }
 
-/* Page shadow — defined here since Tailwind extend doesn't handle complex shadows well */
+/* Page shadow */
 .shadow-page {
   box-shadow:
     0 1px 3px 0 rgba(0, 0, 0, 0.08),

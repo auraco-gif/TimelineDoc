@@ -6,7 +6,7 @@ import { DocumentCanvas } from "@/components/DocumentCanvas";
 import { FeedbackTrigger } from "@/components/FeedbackTrigger";
 import { ExportLeadModal } from "@/components/ExportLeadModal";
 import { ExportSuccessModal } from "@/components/ExportSuccessModal";
-import { SupportButton } from "@/components/SupportButton";
+import { SponsorButton } from "@/components/SponsorButton";
 import { extractAllPhotos, revokePhotoUrls } from "@/lib/metadata";
 import { buildDocument } from "@/lib/layout";
 import { buildPDFBlob } from "@/lib/pdf";
@@ -195,7 +195,7 @@ export default function Home() {
       />
 
       {/* Main content — occupies remaining height below navbar */}
-      <main className="flex flex-col pt-14 h-full overflow-hidden">
+      <main className="flex flex-col pt-[76px] h-full overflow-hidden">
         {/* Future: left panel slot */}
         {/* <LeftPanel /> */}
 
@@ -217,29 +217,29 @@ export default function Home() {
         {/* <RightPanel /> */}
       </main>
 
-      <SupportButton />
+      <SponsorButton />
 
       {/* Status bar */}
       {doc && !isProcessing && (
-        <div className="h-7 border-t border-neutral-200 bg-white/80 backdrop-blur-sm flex items-center px-5 gap-4 shrink-0">
-          <span className="text-[11px] text-neutral-400 tabular-nums">
+        <div className="h-7 border-t border-warm-200 bg-warm-25/80 backdrop-blur-sm flex items-center px-5 gap-4 shrink-0">
+          <span className="text-[11px] text-warm-500 tabular-nums">
             {allPhotos.length} photo{allPhotos.length !== 1 ? "s" : ""}
           </span>
-          <span className="text-neutral-200">·</span>
-          <span className="text-[11px] text-neutral-400 tabular-nums">
+          <span className="text-warm-200">·</span>
+          <span className="text-[11px] text-warm-500 tabular-nums">
             {doc.sections.length} date{doc.sections.length !== 1 ? "s" : ""}
           </span>
-          <span className="text-neutral-200">·</span>
-          <span className="text-[11px] text-neutral-400 tabular-nums">
+          <span className="text-warm-200">·</span>
+          <span className="text-[11px] text-warm-500 tabular-nums">
             {doc.sections.reduce((sum, s) => sum + s.pages.length, 0)} page
             {doc.sections.reduce((sum, s) => sum + s.pages.length, 0) !== 1 ? "s" : ""}
           </span>
           <span className="flex-1" />
-          <FeedbackTrigger className="text-[11px] text-neutral-400" />
-          <span className="text-neutral-200">·</span>
+          <FeedbackTrigger className="text-[11px] text-warm-500" />
+          <span className="text-warm-200">·</span>
           <button
             onClick={handleReset}
-            className="text-[11px] text-neutral-400 hover:text-red-500 transition-colors"
+            className="text-[11px] text-warm-500 hover:text-red-500 transition-colors"
           >
             Clear document
           </button>
