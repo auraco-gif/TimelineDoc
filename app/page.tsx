@@ -6,7 +6,7 @@ import { DocumentCanvas } from "@/components/DocumentCanvas";
 import { FeedbackTrigger } from "@/components/FeedbackTrigger";
 import { ExportLeadModal } from "@/components/ExportLeadModal";
 import { ExportSuccessModal } from "@/components/ExportSuccessModal";
-import { SupportButton } from "@/components/SupportButton";
+import { SponsorButton } from "@/components/SponsorButton";
 import { extractAllPhotos, revokePhotoUrls } from "@/lib/metadata";
 import { buildDocument } from "@/lib/layout";
 import { buildPDFBlob } from "@/lib/pdf";
@@ -217,7 +217,7 @@ export default function Home() {
         {/* <RightPanel /> */}
       </main>
 
-      <SupportButton />
+      <SponsorButton />
 
       {/* Status bar */}
       {doc && !isProcessing && (
