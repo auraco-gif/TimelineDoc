@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export function ExamplePageHeader() {
+export function ResourcePageHeader() {
   return (
     <header className="h-[76px] border-b border-warm-200 bg-warm-25/95 backdrop-blur-sm fixed top-0 left-0 right-0 z-50 flex items-center px-5">
       <Link href="/" className="flex items-center gap-2.5 group">
@@ -21,10 +21,10 @@ export function ExamplePageHeader() {
 
       <nav className="flex items-center gap-1">
         <Link
-          href="/example"
+          href="/resources"
           className="px-3 py-1.5 text-xs font-medium text-warm-600 hover:text-warm-900 hover:bg-warm-100 rounded-lg transition-colors"
         >
-          Examples
+          Resources
         </Link>
         <Link
           href="/"
