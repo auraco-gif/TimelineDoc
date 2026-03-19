@@ -3,7 +3,6 @@ export interface Resource {
   title: string;
   description: string;
   metaDescription: string;
-  date: string;
 }
 
 export type ContentBlock =
@@ -25,7 +24,6 @@ export const RESOURCES: Resource[] = [
       "Step-by-step guide to organizing relationship photos, milestones, and supporting documents into a clear timeline.",
     metaDescription:
       "Learn how to organize relationship photos, milestones, and documents into a clear, chronological timeline for immigration applications.",
-    date: "March 2026",
   },
   {
     slug: "relationship-evidence-example",
@@ -34,7 +32,6 @@ export const RESOURCES: Resource[] = [
       "See an example of a timeline-style relationship evidence page.",
     metaDescription:
       "A sample relationship evidence timeline page showing how photos and events can be organized clearly for immigration applications such as I-130.",
-    date: "March 2026",
   },
   {
     slug: "what-counts-as-relationship-evidence",
@@ -43,7 +40,6 @@ export const RESOURCES: Resource[] = [
       "Common types of relationship evidence people include for immigration cases.",
     metaDescription:
       "An overview of common relationship evidence types — photos, documents, travel records, and more — used in immigration applications.",
-    date: "March 2026",
   },
 ];
 

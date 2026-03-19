@@ -103,7 +103,6 @@ export default async function ResourceArticlePage({
 
           {/* Article header */}
           <div className="space-y-3">
-            <p className="text-xs font-medium text-warm-400">{resource.date}</p>
             <h1 className="text-2xl font-semibold text-warm-900 tracking-tight leading-snug">
               {resource.title}
             </h1>

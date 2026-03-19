@@ -37,9 +37,6 @@ export default function ResourcesPage() {
                 className="group flex flex-col gap-3 p-6 bg-[#FFFDFC] border border-warm-200 rounded-2xl hover:border-warm-300 hover:shadow-[0_2px_12px_rgba(0,0,0,0.06)] transition-all"
               >
                 <div className="flex-1 space-y-1.5">
-                  <p className="text-xs text-warm-400 font-medium">
-                    {resource.date}
-                  </p>
                   <h2 className="text-sm font-semibold text-warm-900 leading-snug group-hover:text-terracotta-500 transition-colors">
                     {resource.title}
                   </h2>
