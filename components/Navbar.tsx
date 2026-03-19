@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Upload, FileDown, Share2, Users, LayoutTemplate } from "lucide-react";
+import { Upload, FileDown, Share2, Users, LayoutTemplate, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 interface NavbarProps {
@@ -76,6 +76,7 @@ export function Navbar({
           href="/resources"
           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md text-warm-500 hover:text-warm-900 hover:bg-warm-100 transition-colors"
         >
+          <BookOpen className="h-3.5 w-3.5 shrink-0" />
           Resources
         </Link>
 
