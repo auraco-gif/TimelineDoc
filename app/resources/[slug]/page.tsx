@@ -34,6 +34,15 @@ function renderBlock(block: ContentBlock, index: number) {
           {block.text}
         </h2>
       );
+    case "h3":
+      return (
+        <h3
+          key={index}
+          className="text-sm font-semibold text-warm-800 tracking-tight pt-1"
+        >
+          {block.text}
+        </h3>
+      );
     case "p":
       return (
         <p key={index} className="text-sm text-warm-600 leading-relaxed">

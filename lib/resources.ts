@@ -8,6 +8,7 @@ export interface Resource {
 export type ContentBlock =
   | { type: "p"; text: string }
   | { type: "h2"; text: string }
+  | { type: "h3"; text: string }
   | { type: "ul"; items: string[] }
   | { type: "image"; src: string; alt: string; caption?: string };
 
@@ -40,6 +41,14 @@ export const RESOURCES: Resource[] = [
       "Common types of relationship evidence people include for immigration cases.",
     metaDescription:
       "An overview of common relationship evidence types — photos, documents, travel records, and more — used in immigration applications.",
+  },
+  {
+    slug: "how-many-photos-for-i130",
+    title: "How Many Photos for I-130?",
+    description:
+      "Learn how many photos to include and how to organize them effectively.",
+    metaDescription:
+      "Learn how many photos to include for I-130 relationship evidence, what types to choose, and how to organize them into a clear timeline.",
   },
 ];
 
@@ -244,6 +253,182 @@ const RESOURCE_CONTENT: Record<string, Omit<ResourcePage, keyof Resource>> = {
           "Invitations to shared events",
           "Social media posts or profiles listing your relationship",
         ],
+      },
+    ],
+  },
+  "how-many-photos-for-i130": {
+    intro:
+      "There is no official number of photos required for an I-130 petition. However, many applicants include a small set of photos that clearly show their relationship over time, rather than submitting a large number of similar images.",
+    content: [
+      {
+        type: "h2",
+        text: "Short Answer",
+      },
+      {
+        type: "p",
+        text: "Most applicants include around 10–30 photos as part of their relationship evidence.",
+      },
+      {
+        type: "p",
+        text: "The goal is not quantity, but to show:",
+      },
+      {
+        type: "ul",
+        items: [
+          "Different stages of the relationship",
+          "Shared experiences over time",
+          "Interactions with friends and family",
+        ],
+      },
+      {
+        type: "h2",
+        text: "What USCIS Typically Looks For",
+      },
+      {
+        type: "p",
+        text: "Based on publicly available USCIS guidance and common applicant experiences, relationship evidence is used to demonstrate that a relationship is genuine and ongoing.",
+      },
+      {
+        type: "p",
+        text: "Photos can help illustrate:",
+      },
+      {
+        type: "ul",
+        items: [
+          "How the couple met and spent time together",
+          "Important milestones (trips, engagement, wedding)",
+          "Interactions with each other's families or social circles",
+        ],
+      },
+      {
+        type: "p",
+        text: "Photos are usually considered alongside other types of evidence, such as travel records, communication history, or shared documents.",
+      },
+      {
+        type: "h2",
+        text: "What Types of Photos to Include",
+      },
+      {
+        type: "p",
+        text: "Many applicants choose photos that represent different moments in their relationship, such as:",
+      },
+      {
+        type: "h3",
+        text: "Early relationship",
+      },
+      {
+        type: "ul",
+        items: ["First meetings", "Early dates"],
+      },
+      {
+        type: "h3",
+        text: "Trips and shared experiences",
+      },
+      {
+        type: "ul",
+        items: ["Travel photos", "Holidays or events"],
+      },
+      {
+        type: "h3",
+        text: "Major milestones",
+      },
+      {
+        type: "ul",
+        items: ["Engagement", "Wedding", "Moving in together"],
+      },
+      {
+        type: "h3",
+        text: "Social context",
+      },
+      {
+        type: "ul",
+        items: ["Photos with friends", "Photos with family members"],
+      },
+      {
+        type: "p",
+        text: "Including variety is generally more helpful than including many similar photos.",
+      },
+      {
+        type: "h2",
+        text: "How to Select the Right Photos",
+      },
+      {
+        type: "p",
+        text: "Instead of uploading everything, many applicants:",
+      },
+      {
+        type: "ul",
+        items: [
+          "Choose a few representative photos per event",
+          "Avoid duplicates or very similar images",
+          "Include photos from different time periods",
+        ],
+      },
+      {
+        type: "p",
+        text: "A small, well-selected set of photos can be easier to review than a large, repetitive collection.",
+      },
+      {
+        type: "h2",
+        text: "How to Organize Photos for I-130",
+      },
+      {
+        type: "p",
+        text: "A common approach is to organize photos into a timeline format, for example:",
+      },
+      {
+        type: "ul",
+        items: [
+          "2019 — First meeting",
+          "2020 — Trips together",
+          "2021 — Engagement",
+          "2022 — Marriage",
+        ],
+      },
+      {
+        type: "p",
+        text: "Each section may include:",
+      },
+      {
+        type: "ul",
+        items: ["2–4 photos", "A short caption (date, location, context)"],
+      },
+      {
+        type: "p",
+        text: "This structure helps present the relationship clearly.",
+      },
+      {
+        type: "h2",
+        text: "Common Mistakes to Avoid",
+      },
+      {
+        type: "ul",
+        items: [
+          "Including too many similar photos",
+          "Not providing context (dates or locations)",
+          "Mixing unrelated photos together",
+          "No clear chronological order",
+        ],
+      },
+      {
+        type: "p",
+        text: "Clarity is usually more important than volume.",
+      },
+      {
+        type: "h2",
+        text: "Final Thoughts",
+      },
+      {
+        type: "p",
+        text: "There is no fixed number of photos required for I-130 relationship evidence.",
+      },
+      {
+        type: "p",
+        text: "Many applicants focus on selecting a small, representative set of photos that shows their relationship over time, rather than submitting as many photos as possible.",
+      },
+      {
+        type: "p",
+        text: "A clear timeline structure can make your evidence easier to review.",
       },
     ],
   },

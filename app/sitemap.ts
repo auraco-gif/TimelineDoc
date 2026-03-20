@@ -13,5 +13,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     {
       url: "https://www.timelinedoc.app/resources/what-counts-as-relationship-evidence",
     },
+    {
+      url: "https://www.timelinedoc.app/resources/how-many-photos-for-i130",
+    },
   ];
 }
