@@ -1,20 +1,21 @@
 import type { MetadataRoute } from "next";
+import { RESOURCES } from "@/lib/resources";
 
+const BASE_URL = "https://www.timelinedoc.app";
+
+// Sitemap is generated automatically from the RESOURCES array.
+// Adding a new resource to lib/resources.ts will include it here with no
+// additional changes required.
 export default function sitemap(): MetadataRoute.Sitemap {
-  return [
-    { url: "https://www.timelinedoc.app" },
-    { url: "https://www.timelinedoc.app/resources" },
-    {
-      url: "https://www.timelinedoc.app/resources/how-to-organize-relationship-evidence",
-    },
-    {
-      url: "https://www.timelinedoc.app/resources/relationship-evidence-example",
-    },
-    {
-      url: "https://www.timelinedoc.app/resources/what-counts-as-relationship-evidence",
-    },
-    {
-      url: "https://www.timelinedoc.app/resources/how-many-photos-for-i130",
-    },
+  const staticRoutes: MetadataRoute.Sitemap = [
+    { url: BASE_URL, lastModified: new Date() },
+    { url: `${BASE_URL}/resources`, lastModified: new Date() },
   ];
+
+  const resourceRoutes: MetadataRoute.Sitemap = RESOURCES.map((r) => ({
+    url: `${BASE_URL}/resources/${r.slug}`,
+    lastModified: new Date(),
+  }));
+
+  return [...staticRoutes, ...resourceRoutes];
 }

@@ -2,20 +2,23 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { RESOURCES, getResourcePage, type ContentBlock } from "@/lib/resources";
+import { RESOURCES, getResource, type ContentBlock } from "@/lib/resources";
 import { ResourcePageHeader } from "@/components/ResourcePageHeader";
 
-export async function generateStaticParams() {
+// ─── Static generation ────────────────────────────────────────────────────────
+// Automatically pre-renders a page for every slug in RESOURCES.
+export function generateStaticParams() {
   return RESOURCES.map((r) => ({ slug: r.slug }));
 }
 
+// ─── Per-page metadata ────────────────────────────────────────────────────────
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const resource = getResourcePage(slug);
+  const resource = getResource(slug);
   if (!resource) return {};
   return {
     title: `${resource.title} | TimelineDoc`,
@@ -23,6 +26,7 @@ export async function generateMetadata({
   };
 }
 
+// ─── Block renderer ───────────────────────────────────────────────────────────
 function renderBlock(block: ContentBlock, index: number) {
   switch (block.type) {
     case "h2":
@@ -83,17 +87,21 @@ function renderBlock(block: ContentBlock, index: number) {
   }
 }
 
+// ─── Page ─────────────────────────────────────────────────────────────────────
 export default async function ResourceArticlePage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const resource = getResourcePage(slug);
+  const resource = getResource(slug);
 
-  if (!resource) {
-    notFound();
-  }
+  if (!resource) notFound();
+
+  // Resolve related articles from explicit relatedSlugs
+  const related = resource.relatedSlugs
+    .map((s) => RESOURCES.find((r) => r.slug === s))
+    .filter((r): r is NonNullable<typeof r> => r !== undefined);
 
   return (
     <div className="min-h-screen bg-warm-50">
@@ -125,14 +133,14 @@ export default async function ResourceArticlePage({
             {resource.content.map((block, i) => renderBlock(block, i))}
           </div>
 
-          {/* Related resources */}
-          {RESOURCES.filter((r) => r.slug !== slug).length > 0 && (
+          {/* Related resources — driven by relatedSlugs in the data file */}
+          {related.length > 0 && (
             <div className="border-t border-warm-200 pt-8 space-y-3">
               <p className="text-xs font-semibold uppercase tracking-widest text-warm-400">
                 Related resources
               </p>
               <ul className="space-y-2">
-                {RESOURCES.filter((r) => r.slug !== slug).map((r) => (
+                {related.map((r) => (
                   <li key={r.slug}>
                     <Link
                       href={`/resources/${r.slug}`}

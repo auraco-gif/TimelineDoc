@@ -1,9 +1,11 @@
-export interface Resource {
-  slug: string;
-  title: string;
-  description: string;
-  metaDescription: string;
-}
+// ─────────────────────────────────────────────────────────────────────────────
+// Resource data — single source of truth.
+//
+// To add a new article:
+//   1. Add an entry to the RESOURCES array below.
+//   2. The /resources index page, /resources/[slug] route, sitemap, metadata,
+//      and related-resource links all update automatically.
+// ─────────────────────────────────────────────────────────────────────────────
 
 export type ContentBlock =
   | { type: "p"; text: string }
@@ -12,12 +14,24 @@ export type ContentBlock =
   | { type: "ul"; items: string[] }
   | { type: "image"; src: string; alt: string; caption?: string };
 
-export interface ResourcePage extends Resource {
+export interface Resource {
+  slug: string;
+  /** Short title shown on index cards and in <title> */
+  title: string;
+  /** One-line description shown on index cards */
+  description: string;
+  /** Used as the <meta name="description"> value */
+  metaDescription: string;
+  /** Opening paragraph rendered below the H1 */
   intro: string;
+  /** Body content blocks in order */
   content: ContentBlock[];
+  /** Slugs of other resources to link at the bottom of the article */
+  relatedSlugs: string[];
 }
 
 export const RESOURCES: Resource[] = [
+  // ── 1 ────────────────────────────────────────────────────────────────────
   {
     slug: "how-to-organize-relationship-evidence",
     title: "How to Organize Relationship Evidence",
@@ -25,42 +39,15 @@ export const RESOURCES: Resource[] = [
       "Step-by-step guide to organizing relationship photos, milestones, and supporting documents into a clear timeline.",
     metaDescription:
       "Learn how to organize relationship photos, milestones, and documents into a clear, chronological timeline for immigration applications.",
-  },
-  {
-    slug: "relationship-evidence-example",
-    title: "Relationship Evidence Example",
-    description:
-      "See an example of a timeline-style relationship evidence page.",
-    metaDescription:
-      "A sample relationship evidence timeline page showing how photos and events can be organized clearly for immigration applications such as I-130.",
-  },
-  {
-    slug: "what-counts-as-relationship-evidence",
-    title: "What Counts as Relationship Evidence?",
-    description:
-      "Common types of relationship evidence people include for immigration cases.",
-    metaDescription:
-      "An overview of common relationship evidence types — photos, documents, travel records, and more — used in immigration applications.",
-  },
-  {
-    slug: "how-many-photos-for-i130",
-    title: "How Many Photos for I-130?",
-    description:
-      "Learn how many photos to include and how to organize them effectively.",
-    metaDescription:
-      "Learn how many photos to include for I-130 relationship evidence, what types to choose, and how to organize them into a clear timeline.",
-  },
-];
-
-const RESOURCE_CONTENT: Record<string, Omit<ResourcePage, keyof Resource>> = {
-  "how-to-organize-relationship-evidence": {
     intro:
       "Organizing relationship evidence can feel overwhelming. A clear, chronological timeline makes it much easier for reviewers to follow your history together. Here are five practical steps to help you get started.",
+    relatedSlugs: [
+      "what-counts-as-relationship-evidence",
+      "how-many-photos-for-i130",
+      "relationship-evidence-example",
+    ],
     content: [
-      {
-        type: "h2",
-        text: "1. Start with your key milestones",
-      },
+      { type: "h2", text: "1. Start with your key milestones" },
       {
         type: "p",
         text: "Begin by listing the most significant events in your relationship — when you met, your first trip together, when you started living together, your engagement, wedding, and so on. These anchor events will form the backbone of your timeline.",
@@ -75,10 +62,7 @@ const RESOURCE_CONTENT: Record<string, Omit<ResourcePage, keyof Resource>> = {
           "Major shared life events",
         ],
       },
-      {
-        type: "h2",
-        text: "2. Gather photos with clear dates",
-      },
+      { type: "h2", text: "2. Gather photos with clear dates" },
       {
         type: "p",
         text: "Photos are one of the most compelling forms of relationship evidence. Collect photos that clearly show you together over time. Most smartphone photos include EXIF metadata with the exact date taken — TimelineDoc reads this automatically.",
@@ -92,18 +76,12 @@ const RESOURCE_CONTENT: Record<string, Omit<ResourcePage, keyof Resource>> = {
           "Everyday photos that show shared life",
         ],
       },
-      {
-        type: "h2",
-        text: "3. Add short descriptions for context",
-      },
+      { type: "h2", text: "3. Add short descriptions for context" },
       {
         type: "p",
         text: "A brief note for each event helps reviewers understand the significance of each moment. Keep descriptions factual and specific: where you were, what the occasion was, and who else was present if relevant.",
       },
-      {
-        type: "h2",
-        text: "4. Group events by date or occasion",
-      },
+      { type: "h2", text: "4. Group events by date or occasion" },
       {
         type: "p",
         text: "Once you have your photos and milestones, group them chronologically. Each page of your timeline should represent a distinct event or time period. This keeps the document structured and easy to navigate.",
@@ -111,15 +89,12 @@ const RESOURCE_CONTENT: Record<string, Omit<ResourcePage, keyof Resource>> = {
       {
         type: "ul",
         items: [
-          "One page per event (e.g. \"Wedding Day, June 2024\")",
+          'One page per event (e.g. "Wedding Day, June 2024")',
           "Multiple photos per event where relevant",
           "Consistent date formatting throughout",
         ],
       },
-      {
-        type: "h2",
-        text: "5. Review and export your PDF",
-      },
+      { type: "h2", text: "5. Review and export your PDF" },
       {
         type: "p",
         text: "Before exporting, review each page for accuracy. Check that dates are correct, descriptions are clear, and photos are legible. A clean, well-organized document is much easier for an officer or attorney to review.",
@@ -127,9 +102,20 @@ const RESOURCE_CONTENT: Record<string, Omit<ResourcePage, keyof Resource>> = {
     ],
   },
 
-  "relationship-evidence-example": {
+  // ── 2 ────────────────────────────────────────────────────────────────────
+  {
+    slug: "relationship-evidence-example",
+    title: "Relationship Evidence Example",
+    description: "See an example of a timeline-style relationship evidence page.",
+    metaDescription:
+      "A sample relationship evidence timeline page showing how photos and events can be organized clearly for immigration applications such as I-130.",
     intro:
       "Many couples struggle to organize relationship evidence for immigration applications such as I-130. Below is a simple example of a clean timeline format that groups photos and events in a clear and structured way.",
+    relatedSlugs: [
+      "how-to-organize-relationship-evidence",
+      "what-counts-as-relationship-evidence",
+      "how-many-photos-for-i130",
+    ],
     content: [
       {
         type: "image",
@@ -138,10 +124,7 @@ const RESOURCE_CONTENT: Record<string, Omit<ResourcePage, keyof Resource>> = {
         caption:
           "Sample relationship evidence timeline page generated with TimelineDoc",
       },
-      {
-        type: "h2",
-        text: "How this example is structured",
-      },
+      { type: "h2", text: "How this example is structured" },
       {
         type: "ul",
         items: [
@@ -151,10 +134,7 @@ const RESOURCE_CONTENT: Record<string, Omit<ResourcePage, keyof Resource>> = {
           "The layout is clean and easy to review",
         ],
       },
-      {
-        type: "h2",
-        text: "Common use cases",
-      },
+      { type: "h2", text: "Common use cases" },
       {
         type: "p",
         text: "This type of timeline format can help organize relationship history into a clear and structured document.",
@@ -171,14 +151,23 @@ const RESOURCE_CONTENT: Record<string, Omit<ResourcePage, keyof Resource>> = {
     ],
   },
 
-  "what-counts-as-relationship-evidence": {
+  // ── 3 ────────────────────────────────────────────────────────────────────
+  {
+    slug: "what-counts-as-relationship-evidence",
+    title: "What Counts as Relationship Evidence?",
+    description:
+      "Common types of relationship evidence people include for immigration cases.",
+    metaDescription:
+      "An overview of common relationship evidence types — photos, documents, travel records, and more — used in immigration applications.",
     intro:
       "Immigration applications that involve a spouse or partner typically require evidence of a genuine relationship. Here is an overview of the most common types of evidence people include.",
+    relatedSlugs: [
+      "how-to-organize-relationship-evidence",
+      "how-many-photos-for-i130",
+      "relationship-evidence-example",
+    ],
     content: [
-      {
-        type: "h2",
-        text: "Photos together",
-      },
+      { type: "h2", text: "Photos together" },
       {
         type: "p",
         text: "Photos are among the most straightforward forms of evidence. A selection of photos over time — showing you in different locations, with family, and at significant events — can paint a clear picture of your shared history.",
@@ -192,10 +181,7 @@ const RESOURCE_CONTENT: Record<string, Omit<ResourcePage, keyof Resource>> = {
           "Everyday photos showing shared life",
         ],
       },
-      {
-        type: "h2",
-        text: "Joint financial records",
-      },
+      { type: "h2", text: "Joint financial records" },
       {
         type: "p",
         text: "Shared financial accounts, leases, or ownership documents demonstrate that you have built a life together.",
@@ -209,10 +195,7 @@ const RESOURCE_CONTENT: Record<string, Omit<ResourcePage, keyof Resource>> = {
           "Insurance documents listing both names",
         ],
       },
-      {
-        type: "h2",
-        text: "Travel records",
-      },
+      { type: "h2", text: "Travel records" },
       {
         type: "p",
         text: "Trips taken together can serve as strong evidence of an ongoing relationship, especially if they span multiple years.",
@@ -225,10 +208,7 @@ const RESOURCE_CONTENT: Record<string, Omit<ResourcePage, keyof Resource>> = {
           "Passport stamps",
         ],
       },
-      {
-        type: "h2",
-        text: "Messages and communications",
-      },
+      { type: "h2", text: "Messages and communications" },
       {
         type: "p",
         text: "Records of regular communication over time can support evidence of a genuine relationship, particularly for couples who have spent time apart.",
@@ -241,10 +221,7 @@ const RESOURCE_CONTENT: Record<string, Omit<ResourcePage, keyof Resource>> = {
           "Video call records",
         ],
       },
-      {
-        type: "h2",
-        text: "Other supporting documents",
-      },
+      { type: "h2", text: "Other supporting documents" },
       {
         type: "ul",
         items: [
@@ -256,22 +233,29 @@ const RESOURCE_CONTENT: Record<string, Omit<ResourcePage, keyof Resource>> = {
       },
     ],
   },
-  "how-many-photos-for-i130": {
+
+  // ── 4 ────────────────────────────────────────────────────────────────────
+  {
+    slug: "how-many-photos-for-i130",
+    title: "How Many Photos for I-130?",
+    description:
+      "Learn how many photos to include and how to organize them effectively.",
+    metaDescription:
+      "Learn how many photos to include for I-130 relationship evidence, what types to choose, and how to organize them into a clear timeline.",
     intro:
       "There is no official number of photos required for an I-130 petition. However, many applicants include a small set of photos that clearly show their relationship over time, rather than submitting a large number of similar images.",
+    relatedSlugs: [
+      "how-to-organize-relationship-evidence",
+      "what-counts-as-relationship-evidence",
+      "relationship-evidence-example",
+    ],
     content: [
-      {
-        type: "h2",
-        text: "Short Answer",
-      },
+      { type: "h2", text: "Short Answer" },
       {
         type: "p",
         text: "Most applicants include around 10–30 photos as part of their relationship evidence.",
       },
-      {
-        type: "p",
-        text: "The goal is not quantity, but to show:",
-      },
+      { type: "p", text: "The goal is not quantity, but to show:" },
       {
         type: "ul",
         items: [
@@ -280,18 +264,12 @@ const RESOURCE_CONTENT: Record<string, Omit<ResourcePage, keyof Resource>> = {
           "Interactions with friends and family",
         ],
       },
-      {
-        type: "h2",
-        text: "What USCIS Typically Looks For",
-      },
+      { type: "h2", text: "What USCIS Typically Looks For" },
       {
         type: "p",
         text: "Based on publicly available USCIS guidance and common applicant experiences, relationship evidence is used to demonstrate that a relationship is genuine and ongoing.",
       },
-      {
-        type: "p",
-        text: "Photos can help illustrate:",
-      },
+      { type: "p", text: "Photos can help illustrate:" },
       {
         type: "ul",
         items: [
@@ -304,42 +282,21 @@ const RESOURCE_CONTENT: Record<string, Omit<ResourcePage, keyof Resource>> = {
         type: "p",
         text: "Photos are usually considered alongside other types of evidence, such as travel records, communication history, or shared documents.",
       },
-      {
-        type: "h2",
-        text: "What Types of Photos to Include",
-      },
+      { type: "h2", text: "What Types of Photos to Include" },
       {
         type: "p",
         text: "Many applicants choose photos that represent different moments in their relationship, such as:",
       },
-      {
-        type: "h3",
-        text: "Early relationship",
-      },
-      {
-        type: "ul",
-        items: ["First meetings", "Early dates"],
-      },
-      {
-        type: "h3",
-        text: "Trips and shared experiences",
-      },
-      {
-        type: "ul",
-        items: ["Travel photos", "Holidays or events"],
-      },
-      {
-        type: "h3",
-        text: "Major milestones",
-      },
+      { type: "h3", text: "Early relationship" },
+      { type: "ul", items: ["First meetings", "Early dates"] },
+      { type: "h3", text: "Trips and shared experiences" },
+      { type: "ul", items: ["Travel photos", "Holidays or events"] },
+      { type: "h3", text: "Major milestones" },
       {
         type: "ul",
         items: ["Engagement", "Wedding", "Moving in together"],
       },
-      {
-        type: "h3",
-        text: "Social context",
-      },
+      { type: "h3", text: "Social context" },
       {
         type: "ul",
         items: ["Photos with friends", "Photos with family members"],
@@ -348,14 +305,8 @@ const RESOURCE_CONTENT: Record<string, Omit<ResourcePage, keyof Resource>> = {
         type: "p",
         text: "Including variety is generally more helpful than including many similar photos.",
       },
-      {
-        type: "h2",
-        text: "How to Select the Right Photos",
-      },
-      {
-        type: "p",
-        text: "Instead of uploading everything, many applicants:",
-      },
+      { type: "h2", text: "How to Select the Right Photos" },
+      { type: "p", text: "Instead of uploading everything, many applicants:" },
       {
         type: "ul",
         items: [
@@ -368,10 +319,7 @@ const RESOURCE_CONTENT: Record<string, Omit<ResourcePage, keyof Resource>> = {
         type: "p",
         text: "A small, well-selected set of photos can be easier to review than a large, repetitive collection.",
       },
-      {
-        type: "h2",
-        text: "How to Organize Photos for I-130",
-      },
+      { type: "h2", text: "How to Organize Photos for I-130" },
       {
         type: "p",
         text: "A common approach is to organize photos into a timeline format, for example:",
@@ -385,10 +333,7 @@ const RESOURCE_CONTENT: Record<string, Omit<ResourcePage, keyof Resource>> = {
           "2022 — Marriage",
         ],
       },
-      {
-        type: "p",
-        text: "Each section may include:",
-      },
+      { type: "p", text: "Each section may include:" },
       {
         type: "ul",
         items: ["2–4 photos", "A short caption (date, location, context)"],
@@ -397,10 +342,7 @@ const RESOURCE_CONTENT: Record<string, Omit<ResourcePage, keyof Resource>> = {
         type: "p",
         text: "This structure helps present the relationship clearly.",
       },
-      {
-        type: "h2",
-        text: "Common Mistakes to Avoid",
-      },
+      { type: "h2", text: "Common Mistakes to Avoid" },
       {
         type: "ul",
         items: [
@@ -410,14 +352,8 @@ const RESOURCE_CONTENT: Record<string, Omit<ResourcePage, keyof Resource>> = {
           "No clear chronological order",
         ],
       },
-      {
-        type: "p",
-        text: "Clarity is usually more important than volume.",
-      },
-      {
-        type: "h2",
-        text: "Final Thoughts",
-      },
+      { type: "p", text: "Clarity is usually more important than volume." },
+      { type: "h2", text: "Final Thoughts" },
       {
         type: "p",
         text: "There is no fixed number of photos required for I-130 relationship evidence.",
@@ -432,11 +368,9 @@ const RESOURCE_CONTENT: Record<string, Omit<ResourcePage, keyof Resource>> = {
       },
     ],
   },
-};
+];
 
-export function getResourcePage(slug: string): ResourcePage | undefined {
-  const meta = RESOURCES.find((r) => r.slug === slug);
-  const body = RESOURCE_CONTENT[slug];
-  if (!meta || !body) return undefined;
-  return { ...meta, ...body };
+/** Look up a resource by slug. Returns undefined if not found. */
+export function getResource(slug: string): Resource | undefined {
+  return RESOURCES.find((r) => r.slug === slug);
 }
