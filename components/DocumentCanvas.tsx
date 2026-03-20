@@ -84,12 +84,13 @@ export function DocumentCanvas({
             <div className="text-center space-y-2.5">
               <h1 className="text-2xl font-semibold text-warm-900 tracking-tight">
                 <span className="text-terracotta-500">TimelineDoc</span>
-                {" "}—{" "}
-                Turn your photos into a clean timeline PDF
+                {" "}–{" "}
+                Create Relationship Timeline for Immigration Evidence
               </h1>
-              <p className="text-sm text-warm-600 max-w-[340px] mx-auto leading-relaxed">
-                Upload photos, auto-sort them by date, and generate a printable
-                PDF for visa, immigration, or relationship evidence.
+              <p className="text-sm text-warm-600 max-w-[400px] mx-auto leading-relaxed">
+                Upload photos, organize relationship evidence, and generate a
+                clean timeline PDF for I-130, spouse visa, and immigration
+                applications.
               </p>
             </div>
 
@@ -101,6 +102,24 @@ export function DocumentCanvas({
               Private by default — your photos are used only to generate your
               PDF and are not publicly shared.
             </p>
+
+            {/* SEO content */}
+            <div className="w-full max-w-[480px] border-t border-warm-200 pt-8 space-y-3 text-center">
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-400">
+                How to organize relationship evidence for immigration
+              </h2>
+              <p className="text-xs text-warm-500 leading-relaxed">
+                Organizing relationship evidence for immigration applications
+                like I-130 or spouse visas can be time-consuming. Many
+                applicants need to present photos, travel records, and
+                milestones in a clear and structured format.
+              </p>
+              <p className="text-xs text-warm-500 leading-relaxed">
+                TimelineDoc automatically sorts your photos by date and
+                generates a clean timeline PDF that makes your evidence easy
+                to review.
+              </p>
+            </div>
 
             {/* Footer */}
             <footer className="flex items-center gap-4 text-[11px] text-warm-500 pt-2">

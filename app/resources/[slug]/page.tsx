@@ -34,6 +34,15 @@ function renderBlock(block: ContentBlock, index: number) {
           {block.text}
         </h2>
       );
+    case "h3":
+      return (
+        <h3
+          key={index}
+          className="text-sm font-semibold text-warm-800 tracking-tight pt-1"
+        >
+          {block.text}
+        </h3>
+      );
     case "p":
       return (
         <p key={index} className="text-sm text-warm-600 leading-relaxed">
@@ -115,6 +124,27 @@ export default async function ResourceArticlePage({
           <div className="space-y-5">
             {resource.content.map((block, i) => renderBlock(block, i))}
           </div>
+
+          {/* Related resources */}
+          {RESOURCES.filter((r) => r.slug !== slug).length > 0 && (
+            <div className="border-t border-warm-200 pt-8 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-widest text-warm-400">
+                Related resources
+              </p>
+              <ul className="space-y-2">
+                {RESOURCES.filter((r) => r.slug !== slug).map((r) => (
+                  <li key={r.slug}>
+                    <Link
+                      href={`/resources/${r.slug}`}
+                      className="text-sm text-warm-700 hover:text-terracotta-500 transition-colors underline-offset-2 hover:underline"
+                    >
+                      {r.title}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* CTA */}
           <div className="bg-warm-100 border border-warm-200 rounded-2xl p-8 space-y-4">
