@@ -23,8 +23,8 @@ export default function ResourcesPage() {
               Resources
             </h1>
             <p className="text-sm text-warm-600 leading-relaxed">
-              Guides and examples to help you organize relationship evidence and
-              create clear timeline documents.
+              Guides and examples to help you organize relationship evidence for
+              immigration applications, including I-130 and spouse visas.
             </p>
           </div>
 
