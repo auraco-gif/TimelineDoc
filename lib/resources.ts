@@ -247,7 +247,7 @@ export const RESOURCES: Resource[] = [
     metaDescription:
       "Learn how many photos to include for I-130 relationship evidence, what types to choose, and how to organize them into a clear timeline.",
     intro:
-      "There is no official number of photos required for an I-130 petition. However, many applicants include a small set of photos that clearly show their relationship over time, rather than submitting a large number of similar images.",
+      "There is no official number of photos required for an I-130 petition. The right approach depends on your individual situation. This page covers what types of photos are commonly included and how to organize them effectively.",
     relatedSlugs: [
       "how-to-organize-relationship-evidence",
       "i130-evidence-checklist",
@@ -258,15 +258,18 @@ export const RESOURCES: Resource[] = [
       { type: "h2", text: "Short Answer" },
       {
         type: "p",
-        text: "Most applicants include around 10–30 photos as part of their relationship evidence.",
+        text: "There is no fixed number of photos required for I-130 relationship evidence. Applicants typically include a representative selection of photos that shows the relationship over time.",
       },
-      { type: "p", text: "The goal is not quantity, but to show:" },
+      {
+        type: "p",
+        text: "A well-chosen set of photos tends to be more useful than a large volume of similar images. The focus is usually on:",
+      },
       {
         type: "ul",
         items: [
-          "Different stages of the relationship",
-          "Shared experiences over time",
-          "Interactions with friends and family",
+          "Variety — different events, locations, and time periods",
+          "Context — photos that show shared experiences",
+          "Timeline — coverage across the length of the relationship",
         ],
       },
       { type: "h2", text: "What USCIS Typically Looks For" },
@@ -361,15 +364,15 @@ export const RESOURCES: Resource[] = [
       { type: "h2", text: "Final Thoughts" },
       {
         type: "p",
-        text: "There is no fixed number of photos required for I-130 relationship evidence.",
+        text: "There is no fixed number of photos required for I-130 relationship evidence. Each case is different.",
       },
       {
         type: "p",
-        text: "Many applicants focus on selecting a small, representative set of photos that shows their relationship over time, rather than submitting as many photos as possible.",
+        text: "Applicants typically focus on selecting photos that show variety — different time periods, locations, and shared experiences — rather than maximizing the number of images.",
       },
       {
         type: "p",
-        text: "A clear timeline structure can make your evidence easier to review.",
+        text: "Organizing photos into a clear timeline structure can make your evidence easier to review.",
       },
     ],
   },
