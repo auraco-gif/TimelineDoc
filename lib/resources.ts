@@ -399,6 +399,16 @@ export const RESOURCES: Resource[] = [
         type: "p",
         text: "This checklist summarizes commonly used types of relationship evidence based on publicly available guidance and typical applicant practices.",
       },
+      {
+        type: "p",
+        text: "U.S. Citizenship and Immigration Services (USCIS) provides official instructions for Form I-130 on their website.",
+      },
+      {
+        type: "link-note",
+        prefix: "Official guidance:",
+        linkText: "USCIS Form I-130 (uscis.gov)",
+        href: "https://www.uscis.gov/i-130",
+      },
       { type: "h2", text: "Quick Checklist" },
       {
         type: "p",

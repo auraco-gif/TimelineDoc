@@ -67,18 +67,23 @@ function renderBlock(block: ContentBlock, index: number) {
           ))}
         </ul>
       );
-    case "link-note":
+    case "link-note": {
+      const isExternal = block.href.startsWith("http");
       return (
         <p key={index} className="text-xs text-warm-500 italic">
           {block.prefix}{" "}
           <Link
             href={block.href}
             className="underline underline-offset-2 hover:text-terracotta-500 transition-colors"
+            {...(isExternal
+              ? { target: "_blank", rel: "noopener noreferrer" }
+              : {})}
           >
             {block.linkText}
           </Link>
         </p>
       );
+    }
     case "image":
       return (
         <div key={index} className="space-y-3">
