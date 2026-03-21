@@ -12,7 +12,8 @@ export type ContentBlock =
   | { type: "h2"; text: string }
   | { type: "h3"; text: string }
   | { type: "ul"; items: string[] }
-  | { type: "image"; src: string; alt: string; caption?: string };
+  | { type: "image"; src: string; alt: string; caption?: string }
+  | { type: "link-note"; prefix: string; linkText: string; href: string };
 
 export interface Resource {
   slug: string;
@@ -42,6 +43,7 @@ export const RESOURCES: Resource[] = [
     intro:
       "Organizing relationship evidence can feel overwhelming. A clear, chronological timeline makes it much easier for reviewers to follow your history together. Here are five practical steps to help you get started.",
     relatedSlugs: [
+      "i130-evidence-checklist",
       "what-counts-as-relationship-evidence",
       "how-many-photos-for-i130",
       "relationship-evidence-example",
@@ -113,6 +115,7 @@ export const RESOURCES: Resource[] = [
       "Many couples struggle to organize relationship evidence for immigration applications such as I-130. Below is a simple example of a clean timeline format that groups photos and events in a clear and structured way.",
     relatedSlugs: [
       "how-to-organize-relationship-evidence",
+      "i130-evidence-checklist",
       "what-counts-as-relationship-evidence",
       "how-many-photos-for-i130",
     ],
@@ -163,6 +166,7 @@ export const RESOURCES: Resource[] = [
       "Immigration applications that involve a spouse or partner typically require evidence of a genuine relationship. Here is an overview of the most common types of evidence people include.",
     relatedSlugs: [
       "how-to-organize-relationship-evidence",
+      "i130-evidence-checklist",
       "how-many-photos-for-i130",
       "relationship-evidence-example",
     ],
@@ -246,6 +250,7 @@ export const RESOURCES: Resource[] = [
       "There is no official number of photos required for an I-130 petition. However, many applicants include a small set of photos that clearly show their relationship over time, rather than submitting a large number of similar images.",
     relatedSlugs: [
       "how-to-organize-relationship-evidence",
+      "i130-evidence-checklist",
       "what-counts-as-relationship-evidence",
       "relationship-evidence-example",
     ],
@@ -365,6 +370,198 @@ export const RESOURCES: Resource[] = [
       {
         type: "p",
         text: "A clear timeline structure can make your evidence easier to review.",
+      },
+    ],
+  },
+
+  // ── 5 ────────────────────────────────────────────────────────────────────
+  {
+    slug: "i130-evidence-checklist",
+    title: "I-130 Relationship Evidence Checklist",
+    description:
+      "A simple checklist of common relationship evidence people include for I-130 applications.",
+    metaDescription:
+      "A simple I-130 relationship evidence checklist covering photos, travel records, communication, and documents to help organize your application.",
+    intro:
+      "Preparing relationship evidence for an I-130 petition can feel overwhelming.",
+    relatedSlugs: [
+      "how-to-organize-relationship-evidence",
+      "what-counts-as-relationship-evidence",
+      "relationship-evidence-example",
+      "how-many-photos-for-i130",
+    ],
+    content: [
+      {
+        type: "p",
+        text: "Many applicants are unsure what to include, how much evidence is needed, and how to organize everything clearly.",
+      },
+      {
+        type: "p",
+        text: "This checklist summarizes commonly used types of relationship evidence based on publicly available guidance and typical applicant practices.",
+      },
+      { type: "h2", text: "Quick Checklist" },
+      {
+        type: "p",
+        text: "Most applicants include a combination of the following:",
+      },
+      {
+        type: "ul",
+        items: [
+          "Photos together",
+          "Travel records",
+          "Communication history",
+          "Proof of shared life (financial or residential)",
+          "Statements or supporting documents",
+        ],
+      },
+      {
+        type: "p",
+        text: "Not every case includes all items — the goal is to show a genuine and ongoing relationship.",
+      },
+      { type: "h2", text: "1. Photos Together" },
+      {
+        type: "p",
+        text: "Photos are one of the most commonly included types of evidence.",
+      },
+      { type: "p", text: "Many applicants include:" },
+      {
+        type: "ul",
+        items: [
+          "Photos from different time periods",
+          "Trips and shared activities",
+          "Holidays and events",
+          "Photos with friends and family",
+        ],
+      },
+      {
+        type: "p",
+        text: "A smaller number of well-chosen photos is usually more effective than a large number of similar images.",
+      },
+      {
+        type: "link-note",
+        prefix: "See also:",
+        linkText: "How many photos for I-130",
+        href: "/resources/how-many-photos-for-i130",
+      },
+      { type: "h2", text: "2. Travel Records" },
+      {
+        type: "p",
+        text: "Travel documents can help show time spent together.",
+      },
+      { type: "p", text: "Examples include:" },
+      {
+        type: "ul",
+        items: [
+          "Flight tickets",
+          "Boarding passes",
+          "Hotel bookings",
+          "Travel itineraries",
+        ],
+      },
+      {
+        type: "p",
+        text: "These can provide additional context when paired with photos.",
+      },
+      { type: "h2", text: "3. Communication History" },
+      {
+        type: "p",
+        text: "Some applicants include records of ongoing communication, such as:",
+      },
+      {
+        type: "ul",
+        items: ["Chat screenshots", "Call logs", "Emails"],
+      },
+      {
+        type: "p",
+        text: "It is common to include a small sample rather than full message histories.",
+      },
+      { type: "h2", text: "4. Proof of Shared Life" },
+      {
+        type: "p",
+        text: "Documents showing shared responsibilities or living arrangements may include:",
+      },
+      {
+        type: "ul",
+        items: [
+          "Joint bank accounts",
+          "Lease or rental agreements",
+          "Utility bills",
+          "Insurance policies",
+        ],
+      },
+      {
+        type: "p",
+        text: "Not all applicants will have these documents, depending on their situation.",
+      },
+      { type: "h2", text: "5. Milestones and Events" },
+      {
+        type: "p",
+        text: "Important relationship milestones can help show how the relationship developed.",
+      },
+      { type: "p", text: "Examples:" },
+      {
+        type: "ul",
+        items: [
+          "Engagement",
+          "Wedding",
+          "Moving in together",
+          "Visits to each other's families",
+        ],
+      },
+      { type: "h2", text: "How to Organize Your Evidence" },
+      {
+        type: "p",
+        text: "Many applicants organize their evidence into a timeline format, such as:",
+      },
+      {
+        type: "ul",
+        items: [
+          "Year or date-based sections",
+          "Each section includes photos + supporting documents",
+          "Short captions explaining context",
+        ],
+      },
+      {
+        type: "p",
+        text: "This approach can make your evidence easier to review.",
+      },
+      {
+        type: "link-note",
+        prefix: "See:",
+        linkText: "How to organize relationship evidence",
+        href: "/resources/how-to-organize-relationship-evidence",
+      },
+      { type: "h2", text: "Common Mistakes to Avoid" },
+      {
+        type: "ul",
+        items: [
+          "Including too many repetitive photos",
+          "Missing dates or descriptions",
+          "Uploading unorganized files",
+          "Mixing unrelated documents together",
+        ],
+      },
+      {
+        type: "p",
+        text: "Clarity and structure are usually more helpful than volume.",
+      },
+      { type: "h2", text: "Creating a Clear Evidence Document" },
+      {
+        type: "p",
+        text: "Manually organizing photos and documents into a clean format can take time.",
+      },
+      { type: "p", text: "Some applicants choose to:" },
+      {
+        type: "ul",
+        items: [
+          "Sort photos by date",
+          "Group evidence into events",
+          "Create a structured PDF timeline",
+        ],
+      },
+      {
+        type: "p",
+        text: "TimelineDoc can help you turn your photos into a clean timeline-style document.",
       },
     ],
   },
